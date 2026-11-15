@@ -20,6 +20,7 @@ import {
 } from "../lib/climate";
 import { buildInsight } from "../lib/insight";
 import { fieldLabel, useField } from "../state/field";
+import { fmtArea } from "../lib/fieldSize";
 import { useClimate } from "../state/useClimate";
 import { useSoil } from "../state/useSoil";
 import { renderInsight, useI18n } from "../i18n";
@@ -34,11 +35,12 @@ interface ClimateProps {
 
 export default function Climate({ onPickField, onContinue }: ClimateProps) {
   const { d } = useI18n();
-  const { field } = useField();
+  const { field, size, sizeM2 } = useField();
+  const sizeChip = `${fmtArea(size.value)} ${d.fieldSize.units[size.unit]}`;
   const climate = useClimate(field?.lat ?? null, field?.lon ?? null);
-  const soil = useSoil(field?.lat ?? null, field?.lon ?? null);
+  const soil = useSoil(field?.lat ?? null, field?.lon ?? null, sizeM2);
   const grace = useGroundwater(field?.lat ?? null, field?.lon ?? null);
-  const terrain = useTerrain(field?.lat ?? null, field?.lon ?? null);
+  const terrain = useTerrain(field?.lat ?? null, field?.lon ?? null, sizeM2);
 
   const status = climate.status === "idle" ? "loading" : climate.status;
   const records = climate.records;
@@ -73,7 +75,7 @@ export default function Climate({ onPickField, onContinue }: ClimateProps) {
       <div className="screen-head">
         <h1>{d.climate.title}</h1>
         <div className="subtitle">
-          {subtitle} · {fieldLabel(field)}
+          {subtitle} · {fieldLabel(field)} · {sizeChip}
           {anyCached && <CachedBadge />}
         </div>
       </div>

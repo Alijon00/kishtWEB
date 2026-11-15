@@ -162,10 +162,12 @@ export function renderReason(d: Dict, r: Reason): RenderedReason {
     case "erosion": {
       const hasCover = Number(p.hasCover) === 1;
       const elevationM = p.elevationM;
+      const steepSharePct = p.steepSharePct;
       return {
         dataPoint: d.reason.erosion.dataPoint({
           slopePct: Number(p.slopePct),
           elevationM: elevationM == null ? null : Number(elevationM),
+          steepSharePct: steepSharePct == null ? null : Number(steepSharePct),
         }),
         source,
         rule: d.reason.erosion.rule,

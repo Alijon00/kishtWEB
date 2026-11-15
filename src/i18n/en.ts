@@ -49,6 +49,17 @@ const en = {
     willRead: "What we'll read for this point",
   },
 
+  fieldSize: {
+    label: "Field size",
+    units: { sotka: "sotka", ha: "ha", km2: "km²" },
+    soilOneCell: "Soil grid is 250 m — one value covers your whole field.",
+    soilSampled: (p: { n: number }) => `based on ${p.n} of 9 points`,
+    range: (p: { min: string; max: string }) => `${p.min}–${p.max}`,
+    steepShare: (p: { pct: number }) => `${p.pct}% of the field is steeper than 8%`,
+    coarseNote:
+      "Climate (~50 km) and groundwater (~300 km) are coarser than this field — they read the same across it.",
+  },
+
   examples: {
     vakhsh: "Vakhsh valley, Tajikistan",
     punjab: "Punjab, India",
@@ -315,7 +326,7 @@ const en = {
     limitPrices: "Market prices and input costs — the income figures are rough relative values, not money.",
     limitPests: "Local pests, diseases and weeds, and which seed varieties you can get.",
     limitWater: "Your water rights and what the canal or well actually delivers.",
-    limitSalinity: "Soil salinity (EC) is not measured — check locally. We treat very high or low pH as a salinity risk only, not a measurement.",
+    limitSalinity: "Soil salinity (EC) is not measured — check locally. Very high or low pH only lowers reliability a little; it is not a salinity measurement.",
     limitResolution:
       "Data is coarse: NASA POWER ~50 km, GRACE-FO ~300 km, SoilGrids 250 m. One pixel covers your field and many neighbours.",
     limitConclusion: "Treat this as a starting point and check it with a local agronomist.",
@@ -327,7 +338,7 @@ const en = {
     intro: "Every number on this screen traces back to open Earth-observation data:",
     power:
       "NASA POWER (MERRA-2) — monthly temperature & rainfall and root-zone soil moisture (GWETROOT), last ~30 years.",
-    grace: "GRACE-FO (NASA/JPL) — total water-storage trend, 2003–2024.",
+    grace: "GRACE / GRACE-FO (NASA/JPL) — total water-storage trend, 2003–2024.",
     srtm: "SRTM via AWS Terrain Tiles — elevation & slope, for the erosion-risk rule.",
     soilgrids: "SoilGrids (ISRIC) — soil texture, organic carbon & pH (not NASA; fills the soil gap).",
     usNote:
@@ -420,7 +431,10 @@ const en = {
       dataPoint: (p: { socPct: number; socLevel: string; ph: number }) =>
         `Organic carbon ${p.socPct}% (${p.socLevel}), pH ${p.ph}`,
       rule: "Rotate plant families to break pest and disease cycles",
-      effect: (p: { families: number }) => `spreads the plan across ${p.families} crop families`,
+      effect: (p: { families: number }) =>
+        p.families === 1
+          ? "keeps the plan in 1 crop family"
+          : `spreads the plan across ${p.families} crop families`,
     },
     groundwater: {
       dataPoint: (p: { cm: number }) => `Water storage ${sgn(p.cm)} cm/yr`,
@@ -429,10 +443,12 @@ const en = {
       effectSteady: "doesn't change the plan",
     },
     erosion: {
-      dataPoint: (p: { slopePct: number; elevationM: number | null }) =>
-        p.elevationM == null
-          ? `Slope ${p.slopePct}%`
-          : `Slope ${p.slopePct}%, elevation ${p.elevationM} m`,
+      dataPoint: (p: { slopePct: number; elevationM: number | null; steepSharePct: number | null }) =>
+        p.steepSharePct == null
+          ? p.elevationM == null
+            ? `Slope ${p.slopePct}%`
+            : `Slope ${p.slopePct}%, elevation ${p.elevationM} m`
+          : `${p.steepSharePct}% of field steeper than 8% (slope ${p.slopePct}%)`,
       rule: "Steep land (>8%) erodes under bare, back-to-back row crops",
       effectCover: "favours soil-holding cover (perennials, legumes) on the slope",
       effectRowCrops: "penalises row crops grown two years running on the slope",
@@ -452,8 +468,26 @@ const en = {
       rule: "Stress-test the plan against a harsher year",
       effect: "shifts the mix toward heat- and drought-tolerant crops",
     },
-    whyJoin: (p: { first: string; soil: string }) =>
-      `${p.first.charAt(0).toUpperCase() + p.first.slice(1)}, and it ${p.soil}.`,
+  },
+
+  planBlurb: {
+    now: (p: { crops: number; families: number; hasLegume: boolean }) => {
+      if (p.hasLegume) {
+        return p.families <= 1
+          ? "One crop family and heavy repetition — too little rotation to hold off pests."
+          : `Only ${p.families} crop families, repeated most years — pest and disease pressure builds.`;
+      }
+      return p.crops <= 1
+        ? "The same crop every year, no legume — soil carbon and nitrogen run down."
+        : `The same ${p.crops} crops every year, no legume — soil carbon and nitrogen run down.`;
+    },
+    kisht: (p: { families: number; hasLegume: boolean; lessWater: boolean }) => {
+      const fam = p.families === 1 ? "1 crop family" : `${p.families} crop families`;
+      const lead = p.hasLegume
+        ? `Adds a legume and spreads across ${fam} — rebuilds soil nitrogen and carbon`
+        : `Spreads across ${fam} — breaks pest and disease cycles`;
+      return lead + (p.lessWater ? ", on less water." : ".");
+    },
   },
 
   sources: {
@@ -468,13 +502,13 @@ const en = {
       url: "https://soilgrids.org/",
     },
     grace: {
-      name: "GRACE-FO — NASA/JPL (PO.DAAC)",
+      name: "GRACE / GRACE-FO — NASA/JPL (PO.DAAC)",
       desc: "Total water storage trend, 2003–2024 (~300 km).",
       url: "https://grace.jpl.nasa.gov/",
     },
     terrain: {
       name: "SRTM — AWS Terrain Tiles",
-      desc: "Elevation & slope from Mapzen terrarium tiles (SRTM-based, ~30 m).",
+      desc: "Elevation & slope from Mapzen terrarium tiles — ~65 m at the map zoom we use (SRTM ~30 m source).",
       url: "https://registry.opendata.aws/terrain-tiles/",
     },
     fao: {

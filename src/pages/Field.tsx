@@ -9,7 +9,8 @@ import { useSoil } from "../state/useSoil";
 import { useClimate } from "../state/useClimate";
 import { useGroundwater } from "../state/useGroundwater";
 import { useTerrain } from "../state/useTerrain";
-import { SLOPE_FLAT_PCT } from "../lib/terrain";
+import { SLOPE_FLAT_PCT, type TerrainResult } from "../lib/terrain";
+import { isSmallField } from "../lib/fieldSize";
 import { EROSION_SLOPE_PCT } from "../lib/rotation/constants";
 import { climatePeriods, dropPartialYears, expectedPeriods } from "../lib/climate";
 import { searchPlace, type PlaceResult } from "../lib/geocode";
@@ -22,13 +23,13 @@ interface FieldProps {
 
 export default function Field({ onContinue }: FieldProps) {
   const { d } = useI18n();
-  const { field, selectPoint } = useField();
+  const { field, sizeM2, selectPoint } = useField();
   const lat = field?.lat ?? null;
   const lon = field?.lon ?? null;
-  const soil = useSoil(lat, lon);
+  const soil = useSoil(lat, lon, sizeM2);
   const climate = useClimate(lat, lon);
   const grace = useGroundwater(lat, lon);
-  const terrain = useTerrain(lat, lon);
+  const terrain = useTerrain(lat, lon, sizeM2);
 
   const [MapComponent] = useState(() => (hasWebGL() ? GlobeMap : FieldMap));
 
@@ -83,6 +84,18 @@ export default function Field({ onContinue }: FieldProps) {
 
   const slopeLabel = (s: number) =>
     s <= SLOPE_FLAT_PCT ? d.terrain.flat : s <= EROSION_SLOPE_PCT ? d.terrain.gentle : d.terrain.steep;
+  const terrainDetail = (t: TerrainResult): string => {
+    const base = `${Math.round(t.elevationM).toLocaleString("en-US")} m · ${slopeLabel(t.slopePct)}`;
+    if (
+      !isSmallField(sizeM2) &&
+      typeof t.meanSlopePct === "number" &&
+      typeof t.maxSlopePct === "number" &&
+      typeof t.steepSharePct === "number"
+    ) {
+      return `${base} · avg ${t.meanSlopePct}% · max ${t.maxSlopePct}% · ${t.steepSharePct}% >8%`;
+    }
+    return base;
+  };
   const climateState: DataState =
     climate.status === "error" ? "unavailable" : (climate.status as DataState);
   const climateStartYear = (
@@ -97,9 +110,7 @@ export default function Field({ onContinue }: FieldProps) {
       state: terrain.status as DataState,
       cached: terrain.cached,
       detail:
-        terrain.status === "ready" && terrain.result
-          ? `${Math.round(terrain.result.elevationM).toLocaleString("en-US")} m · ${slopeLabel(terrain.result.slopePct)}`
-          : undefined,
+        terrain.status === "ready" && terrain.result ? terrainDetail(terrain.result) : undefined,
     },
     {
       name: "SoilGrids",
@@ -121,6 +132,7 @@ export default function Field({ onContinue }: FieldProps) {
           <MapComponent
             lat={field?.lat ?? null}
             lon={field?.lon ?? null}
+            squareM2={sizeM2}
             onPick={(lat, lon) => selectPoint(lat, lon)}
             searchSlot={
               <div className="map-search">

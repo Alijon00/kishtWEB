@@ -42,6 +42,7 @@ export const SOIL_PERENNIAL_BONUS = 1.0;
 export const SOIL_FALLOW_PENALTY = 0.4;
 
 export const EROSION_SLOPE_PCT = 8;
+export const EROSION_FIELD_STEEP_SHARE_PCT = 25;
 export const EROSION_ROW_CROP_IDS = ["cotton", "maize"];
 export const EROSION_PERENNIAL_BONUS = 1.5;
 export const EROSION_PER_LEGUME_SLOT = 0.5;

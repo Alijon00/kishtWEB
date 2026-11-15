@@ -1,4 +1,5 @@
 import type { SoilProfile } from "./soil";
+import { sampleGrid3x3 } from "./fieldSize";
 
 const ENDPOINT = "https://rest.isric.org/soilgrids/v2.0/properties/query";
 const TIMEOUT_MS = 15_000;
@@ -226,4 +227,56 @@ export async function fetchSoilNearest(
     if (hit) return { profile: hit, distanceKm: km };
   }
   return { profile: null, distanceKm: 0 };
+}
+
+export interface SoilGridSample {
+  profile: SoilProfile | null;
+  points: number;
+  total: number;
+  socRange: [number, number] | null;
+  phRange: [number, number] | null;
+}
+
+export function averageProfiles(samples: SoilProfile[]): SoilGridSample {
+  const total = 9;
+  if (samples.length === 0) {
+    return { profile: null, points: 0, total, socRange: null, phRange: null };
+  }
+  const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  const socs = samples.map((p) => p.socPct);
+  const phs = samples.map((p) => p.ph);
+  const profile: SoilProfile = {
+    clayPct: mean(samples.map((p) => p.clayPct)),
+    sandPct: mean(samples.map((p) => p.sandPct)),
+    siltPct: mean(samples.map((p) => p.siltPct)),
+    ph: mean(phs),
+    socPct: mean(socs),
+  };
+  return {
+    profile,
+    points: samples.length,
+    total,
+    socRange: [Math.min(...socs), Math.max(...socs)],
+    phRange: [Math.min(...phs), Math.max(...phs)],
+  };
+}
+
+export async function sampleSoilGrid(
+  lat: number,
+  lon: number,
+  m2: number,
+  opts: { signal?: AbortSignal } = {},
+): Promise<SoilGridSample> {
+  const points = sampleGrid3x3(lat, lon, m2);
+  const samples: SoilProfile[] = [];
+  for (const p of points) {
+    if (opts.signal?.aborted) break;
+    try {
+      const profile = await fetchSoil(p.lat, p.lon, { signal: opts.signal });
+      if (profile) samples.push(profile);
+    } catch {
+      // a point that keeps failing is simply left out of the average
+    }
+  }
+  return averageProfiles(samples);
 }

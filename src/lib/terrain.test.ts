@@ -5,8 +5,31 @@ import {
   lonLatToTilePixel,
   slopePctFromWindow,
   terrainFromPixels,
+  terrainSquareFromPixels,
   TERRAIN_ZOOM,
 } from "./terrain";
+
+// Terrarium RGB for an integer elevation (inverse of decodeElevation, B = 0).
+function encodeElevation(e: number): [number, number, number] {
+  const n = e + 32768;
+  return [Math.floor(n / 256), n % 256, 0];
+}
+
+// Build a WxW RGBA tile whose elevation is `elev(col,row)` metres.
+function tile(width: number, elev: (col: number, row: number) => number): Uint8Array {
+  const data = new Uint8Array(width * width * 4);
+  for (let row = 0; row < width; row++) {
+    for (let col = 0; col < width; col++) {
+      const [r, g, b] = encodeElevation(elev(col, row));
+      const i = (row * width + col) * 4;
+      data[i] = r;
+      data[i + 1] = g;
+      data[i + 2] = b;
+      data[i + 3] = 255;
+    }
+  }
+  return data;
+}
 
 describe("decodeElevation", () => {
   it("uses the terrarium formula R*256 + G + B/256 − 32768", () => {
@@ -111,5 +134,42 @@ describe("terrainFromPixels", () => {
     const res = terrainFromPixels(data, width, 2, 2, 30, 3);
     expect(res.elevationM).toBe(42);
     expect(res.slopePct).toBe(0);
+  });
+});
+
+describe("terrainSquareFromPixels (slope share across the field)", () => {
+  const CELL = 30;
+  const WIDTH = 64;
+
+  it("a uniform 15% plane reads 100% of the field steeper than 8%", () => {
+    // elevation ramps 0.15 m per metre east → 15% slope everywhere
+    const data = tile(WIDTH, (col) => Math.round(0.15 * col * CELL));
+    const res = terrainSquareFromPixels(data, WIDTH, 32, 32, CELL, 20);
+    expect(res.steepSharePct).toBe(100);
+    expect(res.maxSlopePct).toBeGreaterThan(8);
+    expect(res.meanSlopePct).toBeGreaterThan(8);
+  });
+
+  it("a flat field reads 0% steep", () => {
+    const data = tile(WIDTH, () => 1000);
+    const res = terrainSquareFromPixels(data, WIDTH, 32, 32, CELL, 20);
+    expect(res.steepSharePct).toBe(0);
+    expect(res.maxSlopePct).toBe(0);
+    expect(res.meanSlopePct).toBe(0);
+  });
+
+  it("half-steep field reads a partial share", () => {
+    // flat west of centre, 15% ramp east of centre
+    const data = tile(WIDTH, (col) => (col < 32 ? 1000 : Math.round(1000 + 0.15 * (col - 32) * CELL)));
+    const res = terrainSquareFromPixels(data, WIDTH, 32, 32, CELL, 20);
+    expect(res.steepSharePct).toBeGreaterThan(20);
+    expect(res.steepSharePct).toBeLessThan(80);
+  });
+
+  it("a tiny field (sub-pixel span) collapses to the centre point", () => {
+    const data = tile(WIDTH, (col) => Math.round(0.15 * col * CELL));
+    const res = terrainSquareFromPixels(data, WIDTH, 32, 32, CELL, 0.2);
+    expect(res.steepSharePct).toBe(100); // centre pixel is on the 15% plane
+    expect(res.meanSlopePct).toBe(res.slopePct);
   });
 });

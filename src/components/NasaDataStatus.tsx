@@ -56,7 +56,11 @@ export default function NasaDataStatus({
           </li>
         ))}
       </ul>
-      {!hasField && <p className="nasa-status-hint">{d.field.pickToStart}</p>}
+      {hasField ? (
+        <p className="nasa-status-note">{d.fieldSize.coarseNote}</p>
+      ) : (
+        <p className="nasa-status-hint">{d.field.pickToStart}</p>
+      )}
     </div>
   );
 }

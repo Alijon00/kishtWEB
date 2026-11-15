@@ -48,8 +48,18 @@ export function waterScore(slots: PlanSlot[], site: SiteConditions): number {
 
 const isRowCrop = (c: Crop) => C.EROSION_ROW_CROP_IDS.includes(c.id);
 
+// A field is erosion-prone when more than a quarter of it is steeper than 8%.
+// Where the per-field share isn't known (demo sites, pre-size data), fall back
+// to the single centre-point slope.
+export function erosionProne(site: SiteConditions): boolean {
+  if (typeof site.steepSharePct === "number") {
+    return site.steepSharePct > C.EROSION_FIELD_STEEP_SHARE_PCT;
+  }
+  return typeof site.slopePct === "number" && site.slopePct > C.EROSION_SLOPE_PCT;
+}
+
 export function erosionAdjustment(slots: PlanSlot[], site: SiteConditions): number {
-  if (typeof site.slopePct !== "number" || site.slopePct <= C.EROSION_SLOPE_PCT) return 0;
+  if (!erosionProne(site)) return 0;
   const crops = planted(slots);
   if (crops.length === 0) return 0;
 

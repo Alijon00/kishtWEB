@@ -2,6 +2,7 @@ import { CROPS, waterNeedMid, type Crop } from "../../data/crops";
 import * as C from "./constants";
 import {
   effectiveGrowingTmax,
+  erosionProne,
   matchPct,
   reliabilityStatus,
   scoreSlots,
@@ -347,12 +348,14 @@ function buildReasons(
     });
   }
 
-  if (typeof site.slopePct === "number" && site.slopePct > C.EROSION_SLOPE_PCT) {
+  if (erosionProne(site) && typeof site.slopePct === "number") {
     const hasCover = crops.some((c) => c.perennial || c.fixesNitrogen);
+    const share = typeof site.steepSharePct === "number" ? Math.round(site.steepSharePct) : null;
     reasons.push({
-      dataPoint: `Slope ${site.slopePct.toFixed(0)}%${
-        typeof site.elevationM === "number" ? `, elevation ${Math.round(site.elevationM)} m` : ""
-      }`,
+      dataPoint:
+        share != null
+          ? `${share}% of field steeper than 8% (slope ${site.slopePct.toFixed(0)}%)`
+          : `Slope ${site.slopePct.toFixed(0)}%`,
       source: "SRTM",
       rule: "Steep land (>8%) erodes under bare, back-to-back row crops",
       effect: hasCover
@@ -362,6 +365,7 @@ function buildReasons(
       params: {
         slopePct: Math.round(site.slopePct),
         elevationM: typeof site.elevationM === "number" ? Math.round(site.elevationM) : undefined,
+        steepSharePct: share ?? undefined,
         hasCover: hasCover ? 1 : 0,
       },
     });

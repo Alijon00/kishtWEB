@@ -15,7 +15,11 @@ export interface UseTerrainResult {
   reload: () => void;
 }
 
-export function useTerrain(lat: number | null, lon: number | null): UseTerrainResult {
+export function useTerrain(
+  lat: number | null,
+  lon: number | null,
+  m2: number,
+): UseTerrainResult {
   const [status, setStatus] = useState<TerrainStatus>("idle");
   const [result, setResult] = useState<TerrainResult | null>(null);
   const [cached, setCached] = useState(false);
@@ -54,7 +58,7 @@ export function useTerrain(lat: number | null, lon: number | null): UseTerrainRe
       });
     };
 
-    fetchTerrain(lat, lon, { signal: controller.signal })
+    fetchTerrain(lat, lon, { signal: controller.signal, m2 })
       .then((r) => {
         if (r) settle("ready", r, false);
         else tryDemo(() => settle("unavailable", null, false));
@@ -67,7 +71,7 @@ export function useTerrain(lat: number | null, lon: number | null): UseTerrainRe
     if (example) {
       window.setTimeout(() => tryDemo(() => {}), DEMO_FALLBACK_TIMEOUT_MS);
     }
-  }, [lat, lon]);
+  }, [lat, lon, m2]);
 
   useEffect(() => {
     run();

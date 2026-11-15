@@ -75,7 +75,7 @@ All data is fetched directly from the browser from free, open, CORS-enabled serv
 | Source | What we use it for | Link |
 | ------ | ------------------ | ---- |
 | **NASA POWER** | Monthly temperature & rainfall over the last ~30 complete years (~50 km), **and GWETROOT root-zone soil moisture** (MERRA-2) — climate history, trends and whether the soil is drying | https://power.larc.nasa.gov/ |
-| **NASA/JPL GRACE-FO** (PO.DAAC mascons) | Total-water-storage trend 2003–2024 (~300 km) — whether stored water is falling | https://grace.jpl.nasa.gov/ |
+| **NASA/JPL GRACE / GRACE-FO** (PO.DAAC mascons) | Total-water-storage trend 2003–2024 (~300 km) — whether stored water is falling | https://grace.jpl.nasa.gov/ |
 | **NASA GIBS — Blue Marble** | Global imagery on the 3D globe at low zoom | https://nasa-gibs.github.io/gibs-api-docs/ |
 | **SRTM — AWS Terrain Tiles** (Mapzen "terrarium") | Elevation & slope — drives the erosion-risk rule on steep land | https://registry.opendata.aws/terrain-tiles/ |
 | **SoilGrids — ISRIC** | Soil texture, organic carbon and pH at 250 m | https://soilgrids.org/ |
@@ -87,7 +87,7 @@ All data is fetched directly from the browser from free, open, CORS-enabled serv
 
 - **NASA POWER (MERRA-2)** — monthly temperature & rainfall and root-zone soil moisture
   (GWETROOT) over the last ~30 complete years.
-- **GRACE-FO (NASA/JPL)** — total water-storage trend, 2003–2024.
+- **GRACE / GRACE-FO (NASA/JPL)** — total water-storage trend, 2003–2024.
 - **NASA GIBS (Blue Marble)** — the imagery wrapped on the 3D globe at low zoom.
 - **SRTM via AWS Terrain Tiles** — elevation & slope, for the erosion-risk rule.
 - **SoilGrids (ISRIC)** — soil texture, organic carbon & pH (not NASA; fills the soil gap).
@@ -179,7 +179,7 @@ Verify the cached demo data against NASA yourself: `python3 scripts/verify_power
 - **Approximate crop table.** Water/heat/salinity figures are FAO-based reference values, meant
   to be edited for a specific market and region.
 - **GRACE-FO trend ends at 2024** (*follow-up*). The POWER climate record advances automatically
-  each year, but the GRACE-FO total-water-storage trend is still fixed at **2003–2024** — extending
+  each year, but the GRACE / GRACE-FO total-water-storage trend is still fixed at **2003–2024** — extending
   it needs an Earthdata mascon rebuild (`scripts/grace/`). Until then the groundwater trend is one
   year behind the climate panels.
 - **Soil can be unavailable.** When SoilGrids can't return a value for a point (e.g. open water, or

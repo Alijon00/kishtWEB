@@ -1,3 +1,5 @@
+import { isSmallField, STEEP_SLOPE_PCT } from "./fieldSize";
+
 const TILE_SIZE = 256;
 const EARTH_RADIUS_M = 6378137;
 
@@ -6,6 +8,8 @@ export const TERRAIN_ZOOM = 11;
 export const SLOPE_WINDOW_RADIUS = 2;
 
 export const SLOPE_FLAT_PCT = 2;
+
+export const TERRAIN_SAMPLES_PER_SIDE = 5;
 
 export function terrainTileUrl(z: number, x: number, y: number): string {
   return `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`;
@@ -64,7 +68,12 @@ export function slopePctFromWindow(grid: number[][], cellSizeM: number): number 
 export interface TerrainResult {
   elevationM: number;
   slopePct: number;
+  meanSlopePct?: number;
+  maxSlopePct?: number;
+  steepSharePct?: number;
 }
+
+const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function terrainFromPixels(
   data: Uint8Array | Uint8ClampedArray | number[],
@@ -89,26 +98,68 @@ export function terrainFromPixels(
   }
   return {
     elevationM: Math.round(elevAt(px, py)),
-    slopePct: Math.round(slopePctFromWindow(window, cellSizeM) * 10) / 10,
+    slopePct: round1(slopePctFromWindow(window, cellSizeM)),
   };
 }
 
-const CACHE_VERSION = "v1";
-const cacheKey = (lat: number, lon: number) =>
-  `kisht:terrain:${CACHE_VERSION}:${lat.toFixed(3)},${lon.toFixed(3)}`;
+export function terrainSquareFromPixels(
+  data: Uint8Array | Uint8ClampedArray | number[],
+  width: number,
+  px: number,
+  py: number,
+  cellSizeM: number,
+  halfSpanPx: number,
+  samplesPerSide = TERRAIN_SAMPLES_PER_SIDE,
+  channels = 4,
+): TerrainResult {
+  const centre = terrainFromPixels(data, width, px, py, cellSizeM, channels);
+  if (!(halfSpanPx > 0.5) || samplesPerSide < 2) {
+    return {
+      ...centre,
+      meanSlopePct: centre.slopePct,
+      maxSlopePct: centre.slopePct,
+      steepSharePct: centre.slopePct > STEEP_SLOPE_PCT ? 100 : 0,
+    };
+  }
+  const slopes: number[] = [];
+  for (let i = 0; i < samplesPerSide; i++) {
+    for (let j = 0; j < samplesPerSide; j++) {
+      const fx = (i / (samplesPerSide - 1)) * 2 - 1;
+      const fy = (j / (samplesPerSide - 1)) * 2 - 1;
+      const sx = Math.round(px + fx * halfSpanPx);
+      const sy = Math.round(py + fy * halfSpanPx);
+      slopes.push(terrainFromPixels(data, width, sx, sy, cellSizeM, channels).slopePct);
+    }
+  }
+  const mean = slopes.reduce((a, b) => a + b, 0) / slopes.length;
+  const steep = slopes.filter((s) => s > STEEP_SLOPE_PCT).length / slopes.length;
+  return {
+    elevationM: centre.elevationM,
+    slopePct: centre.slopePct,
+    meanSlopePct: round1(mean),
+    maxSlopePct: round1(Math.max(...slopes)),
+    steepSharePct: Math.round(steep * 100),
+  };
+}
 
-function readCache(lat: number, lon: number): TerrainResult | null {
+const CACHE_VERSION = "v2";
+const sizeBucket = (m2?: number) =>
+  m2 && !isSmallField(m2) ? String(Math.round(Math.sqrt(m2))) : "pt";
+const cacheKey = (lat: number, lon: number, m2?: number) =>
+  `kisht:terrain:${CACHE_VERSION}:${lat.toFixed(3)},${lon.toFixed(3)}:${sizeBucket(m2)}`;
+
+function readCache(lat: number, lon: number, m2?: number): TerrainResult | null {
   try {
-    const raw = localStorage.getItem(cacheKey(lat, lon));
+    const raw = localStorage.getItem(cacheKey(lat, lon, m2));
     return raw ? (JSON.parse(raw) as TerrainResult) : null;
   } catch {
     return null;
   }
 }
 
-function writeCache(lat: number, lon: number, value: TerrainResult): void {
+function writeCache(lat: number, lon: number, value: TerrainResult, m2?: number): void {
   try {
-    localStorage.setItem(cacheKey(lat, lon), JSON.stringify(value));
+    localStorage.setItem(cacheKey(lat, lon, m2), JSON.stringify(value));
   } catch {
   }
 }
@@ -140,9 +191,10 @@ function loadImage(url: string, signal?: AbortSignal): Promise<HTMLImageElement>
 export async function fetchTerrain(
   lat: number,
   lon: number,
-  opts: { signal?: AbortSignal } = {},
+  opts: { signal?: AbortSignal; m2?: number } = {},
 ): Promise<TerrainResult | null> {
-  const cached = readCache(lat, lon);
+  const { m2 } = opts;
+  const cached = readCache(lat, lon, m2);
   if (cached) return cached;
 
   const { tileX, tileY, px, py } = lonLatToTilePixel(lat, lon, TERRAIN_ZOOM);
@@ -156,8 +208,11 @@ export async function fetchTerrain(
     ctx.drawImage(img, 0, 0);
     const { data } = ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE);
     const cell = groundResolutionM(lat, TERRAIN_ZOOM);
-    const result = terrainFromPixels(data, TILE_SIZE, px, py, cell, 4);
-    writeCache(lat, lon, result);
+    const result =
+      m2 && !isSmallField(m2)
+        ? terrainSquareFromPixels(data, TILE_SIZE, px, py, cell, Math.sqrt(m2) / 2 / cell)
+        : terrainFromPixels(data, TILE_SIZE, px, py, cell, 4);
+    writeCache(lat, lon, result, m2);
     return result;
   } catch (err) {
     if (opts.signal?.aborted) return null;

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fetchSoil, parseSoilGrids, SOIL_RETRY_BACKOFF_MS } from "./soilgrids";
+import { averageProfiles, fetchSoil, parseSoilGrids, SOIL_RETRY_BACKOFF_MS } from "./soilgrids";
 
 function layer(name: string, means: [number, number, number], dFactor = 10) {
   return {
@@ -156,5 +156,33 @@ describe("fetchSoil localStorage cache (survives a later outage)", () => {
     expect(second).not.toBeNull();
     expect(second!.socPct).toBeCloseTo(1, 6);
     expect(down).not.toHaveBeenCalled();
+  });
+});
+
+describe("averageProfiles (3×3 field soil)", () => {
+  const prof = (socPct: number, ph: number) => ({
+    clayPct: 20,
+    sandPct: 40,
+    siltPct: 40,
+    ph,
+    socPct,
+  });
+
+  it("averages socPct/pH and reports the min–max range and point count", () => {
+    const g = averageProfiles([prof(1.0, 6.8), prof(2.0, 7.4), prof(1.5, 7.0)]);
+    expect(g.points).toBe(3);
+    expect(g.total).toBe(9);
+    expect(g.profile!.socPct).toBeCloseTo(1.5, 6);
+    expect(g.profile!.ph).toBeCloseTo(7.0666, 3);
+    expect(g.socRange).toEqual([1.0, 2.0]);
+    expect(g.phRange).toEqual([6.8, 7.4]);
+  });
+
+  it("returns a null profile and null ranges when no point succeeded", () => {
+    const g = averageProfiles([]);
+    expect(g.profile).toBeNull();
+    expect(g.points).toBe(0);
+    expect(g.socRange).toBeNull();
+    expect(g.phRange).toBeNull();
   });
 });

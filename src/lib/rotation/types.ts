@@ -29,6 +29,7 @@ export interface SiteConditions {
 
   elevationM?: number;
   slopePct?: number;
+  steepSharePct?: number;
 
   soilMoistureTrend?: "falling" | "stable" | "rising";
   soilMoistureBaseline?: number;

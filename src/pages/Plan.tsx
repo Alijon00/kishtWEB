@@ -9,6 +9,7 @@ import type { Priorities as Weights, Scenario } from "../lib/rotation/types";
 import { cropName, useI18n } from "../i18n";
 import { usePlan, defaultCurrentRotation } from "../state/plan";
 import { useField, fieldLabel } from "../state/field";
+import { fmtArea } from "../lib/fieldSize";
 import { useSiteConditions } from "../state/useSiteConditions";
 
 interface PlanProps {
@@ -56,7 +57,8 @@ const scenKey = (s: Scenario): ScenKey =>
 
 export default function Plan({ onPickField }: PlanProps) {
   const { d } = useI18n();
-  const { field } = useField();
+  const { field, size, sizeM2 } = useField();
+  const sizeChip = `${fmtArea(size.value)} ${d.fieldSize.units[size.unit]}`;
   const {
     priorities,
     setPriority,
@@ -69,7 +71,7 @@ export default function Plan({ onPickField }: PlanProps) {
     setScenario,
     setWhyPlanId,
   } = usePlan();
-  const bundle = useSiteConditions(field?.lat ?? null, field?.lon ?? null);
+  const bundle = useSiteConditions(field?.lat ?? null, field?.lon ?? null, sizeM2);
   const [featuredId, setFeaturedId] = useState<string | null>(null);
   const [whyOpen, setWhyOpen] = useState(false);
 
@@ -255,7 +257,7 @@ export default function Plan({ onPickField }: PlanProps) {
       <div className="screen-head">
         <h1>{d.plan.title}</h1>
         <div className="subtitle">
-          {d.plan.subtitle} · {fieldLabel(field)}
+          {d.plan.subtitle} · {fieldLabel(field)} · {sizeChip}
           {bundle.cached && <CachedBadge />}
         </div>
       </div>
@@ -391,6 +393,7 @@ export default function Plan({ onPickField }: PlanProps) {
               </summary>
               <WhyPanel
                 result={result}
+                sizeLabel={sizeChip}
                 soilFallback={
                   bundle.soilStatus === "unavailable" || bundle.soilStatus === "error"
                 }

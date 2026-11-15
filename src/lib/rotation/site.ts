@@ -18,7 +18,7 @@ export function buildSiteConditions(
   lat: number,
   groundwater: Groundwater = "unknown",
   groundwaterTrendCm?: number,
-  terrain?: { elevationM: number; slopePct: number } | null,
+  terrain?: { elevationM: number; slopePct: number; steepSharePct?: number } | null,
 ): SiteConditions {
   const recs = dropPartialYears(records);
   const summary = summarize(recs);
@@ -50,6 +50,7 @@ export function buildSiteConditions(
 
     elevationM: terrain?.elevationM,
     slopePct: terrain?.slopePct,
+    steepSharePct: terrain?.steepSharePct,
 
     soilMoistureTrend: moisture.hasData ? moisture.trend : undefined,
     soilMoistureBaseline: moisture.hasData ? moisture.baseline : undefined,

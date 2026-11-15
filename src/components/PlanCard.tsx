@@ -1,8 +1,11 @@
 import type { Plan } from "../lib/rotation/types";
+import type { Crop } from "../data/crops";
 import { groupSlotsByYear } from "../lib/rotation/engine";
-import { cropName, renderReason, useI18n } from "../i18n";
+import { cropName, useI18n } from "../i18n";
 import { cropLookById } from "../lib/cropLook";
 import ScoreBar from "./ScoreBar";
+
+const LESS_WATER_SCORE = 7.5;
 
 interface PlanCardProps {
   plan: Plan;
@@ -19,14 +22,14 @@ export default function PlanCard({ plan, onSeeEvidence }: PlanCardProps) {
   const summerLabel = tropical ? d.rotation.seasonLong : d.rotation.seasonSummer;
   const winterLabel = tropical ? d.rotation.seasonShort : d.rotation.seasonWinter;
 
-  const firstEffect = renderReason(d, plan.reasons[0]).effect;
-  const soilReason = plan.reasons.find(
-    (r) => r.code === "soilLegume" || r.code === "soilDiversity",
-  );
-  const soilEffect = soilReason ? renderReason(d, soilReason).effect : "";
-  const why = soilEffect
-    ? d.reason.whyJoin({ first: firstEffect, soil: soilEffect })
-    : firstEffect.charAt(0).toUpperCase() + firstEffect.slice(1) + ".";
+  const planted = plan.slots.map((s) => s.crop).filter((c): c is Crop => c != null);
+  const distinctCrops = new Set(planted.map((c) => c.id)).size;
+  const families = new Set(planted.map((c) => c.family)).size;
+  const hasLegume = planted.some((c) => c.fixesNitrogen);
+  const why =
+    plan.id === "current"
+      ? d.planBlurb.now({ crops: distinctCrops, families, hasLegume })
+      : d.planBlurb.kisht({ families, hasLegume, lessWater: plan.scores.water >= LESS_WATER_SCORE });
 
   return (
     <div className="card plan-card">

@@ -2,12 +2,14 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   MapContainer,
   Marker,
+  Polygon,
   TileLayer,
   ZoomControl,
   useMap,
   useMapEvents,
 } from "react-leaflet";
 import { useI18n } from "../i18n";
+import { squareRing } from "../lib/fieldSize";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
@@ -33,9 +35,12 @@ interface FieldMapProps {
   lat: number | null;
   lon: number | null;
   onPick: (lat: number, lon: number) => void;
+  squareM2?: number;
   searchSlot?: ReactNode;
   children?: ReactNode;
 }
+
+const FIELD_SQUARE_COLOR = "#C6F05A";
 
 function ResizeFix() {
   const map = useMap();
@@ -74,12 +79,24 @@ function Recenter({ lat, lon }: { lat: number | null; lon: number | null }) {
   return null;
 }
 
-export default function FieldMap({ lat, lon, onPick, searchSlot, children }: FieldMapProps) {
+export default function FieldMap({
+  lat,
+  lon,
+  onPick,
+  squareM2,
+  searchSlot,
+  children,
+}: FieldMapProps) {
   const { d } = useI18n();
   const [layer, setLayer] = useState<Layer>("satellite");
 
   const center: [number, number] = lat != null && lon != null ? [lat, lon] : [38, 68];
   const zoom = lat != null && lon != null ? 12 : 5;
+
+  const squarePositions: [number, number][] | null =
+    lat != null && lon != null && squareM2 && squareM2 > 0
+      ? squareRing(lat, lon, squareM2).map(([lng, la]) => [la, lng] as [number, number])
+      : null;
 
   return (
     <div className={"map-wrap" + (layer === "map" ? " map-soft-tiles" : "")}>
@@ -143,6 +160,18 @@ export default function FieldMap({ lat, lon, onPick, searchSlot, children }: Fie
         <ResizeFix />
         <ClickHandler onPick={onPick} />
         <Recenter lat={lat} lon={lon} />
+
+        {squarePositions && (
+          <Polygon
+            positions={squarePositions}
+            pathOptions={{
+              color: FIELD_SQUARE_COLOR,
+              weight: 2,
+              fillColor: FIELD_SQUARE_COLOR,
+              fillOpacity: 0.2,
+            }}
+          />
+        )}
 
         {lat != null && lon != null && (
           <Marker

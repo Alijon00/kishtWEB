@@ -9,6 +9,7 @@ import { usePlan } from "../state/plan";
 interface WhyPanelProps {
   result: EngineResult;
   soilFallback?: boolean;
+  sizeLabel?: string;
 }
 
 function planCrops(slots: PlanSlot[]): Crop[] {
@@ -23,7 +24,7 @@ function planCrops(slots: PlanSlot[]): Crop[] {
   return out;
 }
 
-export default function WhyPanel({ result, soilFallback = false }: WhyPanelProps) {
+export default function WhyPanel({ result, soilFallback = false, sizeLabel }: WhyPanelProps) {
   const { d } = useI18n();
   const { whyPlanId, setWhyPlanId } = usePlan();
 
@@ -34,6 +35,11 @@ export default function WhyPanel({ result, soilFallback = false }: WhyPanelProps
 
   return (
     <div className="why-panel">
+      {sizeLabel && (
+        <p className="why-size mono">
+          {d.fieldSize.label}: {sizeLabel}
+        </p>
+      )}
       {soilFallback && (
         <p className="panel-msg soil-typical" role="note">
           {d.soil.typical}

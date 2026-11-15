@@ -4,6 +4,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import { useI18n } from "../i18n";
 import type { Dict } from "../i18n/en";
 import FieldMap from "./FieldMap";
+import { squareRing } from "../lib/fieldSize";
 import {
   buildMapStyle,
   CONTINENTS,
@@ -23,12 +24,22 @@ interface GlobeMapProps {
   lat: number | null;
   lon: number | null;
   onPick: (lat: number, lon: number) => void;
+  squareM2?: number;
   searchSlot?: ReactNode;
   children?: ReactNode;
 }
 
+const FIELD_SQUARE_COLOR = "#C6F05A";
+const EMPTY_FC = { type: "FeatureCollection" as const, features: [] };
+
+const squareFeature = (lat: number, lon: number, m2: number) => ({
+  type: "Feature" as const,
+  properties: {},
+  geometry: { type: "Polygon" as const, coordinates: [squareRing(lat, lon, m2)] },
+});
+
 export default function GlobeMap(props: GlobeMapProps) {
-  const { lat, lon, onPick, searchSlot, children } = props;
+  const { lat, lon, onPick, squareM2, searchSlot, children } = props;
   const { d } = useI18n();
   const [glFailed, setGlFailed] = useState(false);
   const [layer, setLayer] = useState<Layer>("satellite");
@@ -195,6 +206,37 @@ export default function GlobeMap(props: GlobeMapProps) {
     else map.once("load", apply);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lon]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getSource("field-square")) {
+        map.addSource("field-square", { type: "geojson", data: EMPTY_FC });
+        map.addLayer({
+          id: "field-square-fill",
+          type: "fill",
+          source: "field-square",
+          paint: { "fill-color": FIELD_SQUARE_COLOR, "fill-opacity": 0.2 },
+        });
+        map.addLayer({
+          id: "field-square-outline",
+          type: "line",
+          source: "field-square",
+          paint: { "line-color": FIELD_SQUARE_COLOR, "line-width": 2 },
+        });
+      }
+      const src = map.getSource("field-square") as maplibregl.GeoJSONSource | undefined;
+      if (!src) return;
+      if (lat == null || lon == null || !(squareM2 && squareM2 > 0)) {
+        src.setData(EMPTY_FC);
+      } else {
+        src.setData(squareFeature(lat, lon, squareM2));
+      }
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once("load", apply);
+  }, [lat, lon, squareM2]);
 
   useEffect(() => {
     const map = mapRef.current;

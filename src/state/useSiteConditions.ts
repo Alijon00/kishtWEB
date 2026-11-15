@@ -28,11 +28,12 @@ export interface SiteBundle {
 export function useSiteConditions(
   lat: number | null,
   lon: number | null,
+  m2: number,
 ): SiteBundle {
   const climate = useClimate(lat, lon);
-  const soil = useSoil(lat, lon);
+  const soil = useSoil(lat, lon, m2);
   const grace = useGroundwater(lat, lon);
-  const terrain = useTerrain(lat, lon);
+  const terrain = useTerrain(lat, lon, m2);
 
   const summary = useMemo(
     () => (climate.records ? summarize(climate.records) : null),
