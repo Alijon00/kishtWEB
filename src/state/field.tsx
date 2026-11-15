@@ -13,11 +13,9 @@ import { reverseGeocode } from "../lib/geocode";
 export interface Field {
   lat: number;
   lon: number;
-  /** Reverse-geocoded place name; null until resolved (or if it failed). */
   placeName: string | null;
 }
 
-/** The three demo fields carried over from Part 1. */
 export interface ExampleSite {
   id: string;
   name: string;
@@ -33,13 +31,11 @@ export const EXAMPLE_SITES: ExampleSite[] = [
 
 interface FieldContextValue {
   field: Field | null;
-  /** Set a brand-new point (clears the old name; triggers reverse geocoding). */
   selectPoint: (lat: number, lon: number, presetName?: string) => void;
 }
 
 const FieldContext = createContext<FieldContextValue | null>(null);
 
-/** Round coordinates to 5 decimals (~1 m) to keep URLs and cache keys tidy. */
 const round5 = (n: number) => Math.round(n * 1e5) / 1e5;
 
 function readUrlField(): Field | null {
@@ -80,12 +76,10 @@ export function FieldProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  // Keep the URL in sync so links are shareable and reload to the same field.
   useEffect(() => {
     writeUrlField(field);
   }, [field?.lat, field?.lon]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Resolve a place name whenever we have coordinates but no name yet.
   useEffect(() => {
     if (!field || field.placeName !== null) return;
     const lat = field.lat;
@@ -116,7 +110,6 @@ export function useField(): FieldContextValue {
   return ctx;
 }
 
-/** A readable label for the header / panels: place name or coordinates. */
 export function fieldLabel(field: Field | null): string {
   if (!field) return "—";
   if (field.placeName) return field.placeName;

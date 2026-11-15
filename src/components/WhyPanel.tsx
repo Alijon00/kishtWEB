@@ -7,11 +7,9 @@ import { cropLookById } from "../lib/cropLook";
 import { usePlan } from "../state/plan";
 
 interface WhyPanelProps {
-  /** The plans the engine built (same result the Plan screen renders above). */
   result: EngineResult;
 }
 
-/** Distinct crops of a plan, in the order they first appear (fallow skipped). */
 function planCrops(slots: PlanSlot[]): Crop[] {
   const seen = new Set<string>();
   const out: Crop[] = [];
@@ -24,12 +22,6 @@ function planCrops(slots: PlanSlot[]): Crop[] {
   return out;
 }
 
-/**
- * The full "data → rule → decision" evidence for the selected plan. Formerly the
- * standalone Why screen; now rendered inside the collapsible "Why this plan"
- * section at the bottom of the Plan screen. Engine/data untouched — this only
- * explains the plans already computed on the Plan screen.
- */
 export default function WhyPanel({ result }: WhyPanelProps) {
   const { d } = useI18n();
   const { whyPlanId, setWhyPlanId } = usePlan();
@@ -41,7 +33,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
 
   return (
     <div className="why-panel">
-      {/* Which plan are we explaining? */}
+      {}
       <div className="why-pick">
         <span className="why-pick-label">{d.why.explaining}:</span>
         <div className="seg" role="group" aria-label={d.why.explaining}>
@@ -59,7 +51,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
         </div>
       </div>
 
-      {/* The four years, two seasons each */}
+      {}
       <div className="years-row why-years">
         {groupSlotsByYear(selected.slots).map((yr) => {
           const tropical = selected.seasonKind === "tropical";
@@ -89,7 +81,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
         })}
       </div>
 
-      {/* Data → rule → decision */}
+      {}
       <div className="card panel-block">
         <h2 className="block-h">{d.why.chainHeading}</h2>
         <div className="table-scroll">
@@ -121,7 +113,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
         </div>
       </div>
 
-      {/* What each crop needs */}
+      {}
       <div className="card panel-block">
         <h2 className="block-h">{d.why.needsHeading}</h2>
         <div className="table-scroll">
@@ -152,7 +144,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
         <div className="source">{d.why.needsCaption}</div>
       </div>
 
-      {/* What Kisht does not know */}
+      {}
       <div className="card panel-block limits-card">
         <h2 className="block-h">{d.why.limitsHeading}</h2>
         <ul className="limits-list">
@@ -165,7 +157,7 @@ export default function WhyPanel({ result }: WhyPanelProps) {
         <p className="limits-conclusion">{d.why.limitConclusion}</p>
       </div>
 
-      {/* Sources */}
+      {}
       <div className="card panel-block">
         <h2 className="block-h">{d.why.sourcesHeading}</h2>
         <ul className="sources-list">

@@ -11,18 +11,10 @@ export type TerrainStatus = "idle" | "loading" | "ready" | "unavailable";
 export interface UseTerrainResult {
   status: TerrainStatus;
   result: TerrainResult | null;
-  /** True when the terrain came from the offline demo cache, not a live tile. */
   cached: boolean;
   reload: () => void;
 }
 
-/**
- * Read SRTM elevation + slope for a point from AWS Terrain Tiles. Like the
- * climate/soil hooks: for the three example points a pre-fetched copy ships in
- * the demo bundle and is used if the live tile is slow, or fails (network/CORS).
- * "unavailable" is a normal outcome (no tile, tainted canvas) — the plan then
- * simply omits the slope rule.
- */
 export function useTerrain(lat: number | null, lon: number | null): UseTerrainResult {
   const [status, setStatus] = useState<TerrainStatus>("idle");
   const [result, setResult] = useState<TerrainResult | null>(null);
@@ -72,7 +64,6 @@ export function useTerrain(lat: number | null, lon: number | null): UseTerrainRe
         tryDemo(() => settle("unavailable", null, false));
       });
 
-    // If the live tile is simply slow, fall back to the cache (example points).
     if (example) {
       window.setTimeout(() => tryDemo(() => {}), DEMO_FALLBACK_TIMEOUT_MS);
     }

@@ -8,21 +8,10 @@ export type GraceStatus = "idle" | "loading" | "ready" | "unavailable";
 export interface UseGroundwaterResult {
   status: GraceStatus;
   result: GraceResult | null;
-  /** The engine's groundwater enum; "unknown" until we have a GRACE value. */
   groundwater: Groundwater;
-  /** True when the trend came from the offline demo cache. */
   cached: boolean;
 }
 
-/**
- * Look up the GRACE-FO total-water-storage trend for a point. "unavailable"
- * (no precomputed file yet, or a no-data cell) is a normal outcome, not an
- * error — groundwater simply stays "unknown" and the engine behaves as before.
- *
- * GRACE is already a local file (public/data/grace_trend.json), so the only
- * fallback is: if that file is absent on an example point, use the trend baked
- * into the demo bundle so the example still shows groundwater offline.
- */
 export function useGroundwater(
   lat: number | null,
   lon: number | null,
@@ -46,7 +35,7 @@ export function useGroundwater(
     const example = matchExample(lat, lon);
 
     fetchGraceTrend(lat, lon).then((r) => {
-      if (id !== reqId.current) return; // a newer point superseded this one
+      if (id !== reqId.current) return;
       if (r) {
         setResult(r);
         setStatus("ready");

@@ -1,8 +1,3 @@
-/**
- * Best-effort WebGL support check, used to decide whether to mount the MapLibre
- * globe or fall back to the flat Leaflet map. Safe to call outside the browser
- * (returns false when there's no document).
- */
 export function hasWebGL(): boolean {
   if (typeof document === "undefined" || typeof window === "undefined") return false;
   try {

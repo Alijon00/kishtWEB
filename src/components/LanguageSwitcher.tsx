@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { LANGS, useI18n, type Lang } from "../i18n";
 
-/** Short code shown in the header; the menu lists full language names. */
 const SHORT: Record<Lang, string> = { en: "EN", ru: "RU", tg: "TJ" };
 
 export default function LanguageSwitcher() {

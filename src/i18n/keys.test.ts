@@ -3,12 +3,6 @@ import en from "./en";
 import ru from "./ru";
 import tg from "./tg";
 
-/**
- * Collect every key path in a dictionary. Objects are recursed; functions and
- * arrays (e.g. months) are treated as leaves. This guards against a language
- * drifting from the English contract even beyond what `Dict = typeof en`
- * already enforces at compile time.
- */
 function keyPaths(obj: unknown, prefix = ""): string[] {
   if (obj === null || typeof obj !== "object" || Array.isArray(obj)) {
     return prefix ? [prefix] : [];

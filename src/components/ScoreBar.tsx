@@ -1,6 +1,5 @@
 import { useI18n } from "../i18n";
 
-/** A labelled 0–10 score as a horizontal bar with a worded level (no raw number). */
 export default function ScoreBar({ label, score }: { label: string; score: number }) {
   const { d } = useI18n();
   const pct = Math.max(0, Math.min(100, score * 10));

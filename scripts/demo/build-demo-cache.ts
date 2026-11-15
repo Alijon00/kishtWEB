@@ -1,18 +1,3 @@
-/**
- * Build public/data/demo/{vakhsh,punjab,nakuru}.json — the offline demo cache.
- *
- * Run this ONCE, with a working internet connection, from the repo root:
- *
- *     npx tsx scripts/demo/build-demo-cache.ts
- *
- * For each example field it fetches the real NASA POWER and SoilGrids responses
- * and looks up the GRACE-FO trend from public/data/grace_trend.json (so run the
- * GRACE builder first — see scripts/grace/README.md), then writes one JSON per
- * field. The app loads these when a live API is slow/offline for an example
- * point and shows a "cached NASA data" badge. These are REAL responses, saved —
- * nothing here is hand-written or made up.
- */
-
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
@@ -29,7 +14,6 @@ import {
   type TerrainResult,
 } from "../../src/lib/terrain";
 
-// Must match DEMO_POINTS in src/lib/demoCache.ts and EXAMPLE_SITES in state/field.
 const POINTS = [
   { id: "vakhsh", lat: 37.7, lon: 68.8 },
   { id: "punjab", lat: 30.80, lon: 75.65 },
@@ -45,10 +29,6 @@ async function getJson(url: string): Promise<unknown> {
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();
 }
-
-// --- Minimal PNG decoder (8-bit RGB/RGBA, non-interlaced) --------------------
-// Terrarium tiles are 256×256 8-bit RGB PNGs. Decode with Node's built-in zlib
-// so this script needs no extra dependency — just `npx tsx`.
 
 function paeth(a: number, b: number, c: number): number {
   const p = a + b - c;
@@ -83,7 +63,7 @@ function decodePng(buf: Buffer): { width: number; channels: number; data: Uint8A
     }
     pos += 12 + length;
   }
-  const channels = colorType === 6 ? 4 : 3; // 2 = RGB, 6 = RGBA
+  const channels = colorType === 6 ? 4 : 3;
   const raw = inflateSync(Buffer.concat(idat));
   const stride = width * channels;
   const out = new Uint8Array(height * stride);
@@ -110,7 +90,6 @@ function decodePng(buf: Buffer): { width: number; channels: number; data: Uint8A
   return { width, channels, data: out };
 }
 
-/** Fetch + decode the terrarium tile for a point and compute elevation + slope. */
 async function getTerrain(lat: number, lon: number): Promise<TerrainResult> {
   const { tileX, tileY, px, py } = lonLatToTilePixel(lat, lon, TERRAIN_ZOOM);
   const res = await fetch(terrainTileUrl(TERRAIN_ZOOM, tileX, tileY));

@@ -12,7 +12,6 @@ function Shell() {
   const { d } = useI18n();
   const [step, setStep] = useState(1);
 
-  // Tab title follows the current step + language, e.g. "Your field · kisht.".
   useEffect(() => {
     const label = step === 1 ? d.tab.field : step === 2 ? d.tab.changed : d.tab.plan;
     document.title = `${label} · kisht.`;

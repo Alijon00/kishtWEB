@@ -21,13 +21,12 @@ const STORAGE_KEY = "kisht.lang";
 function readLang(): Lang {
   if (typeof window === "undefined") return "en";
   const v = window.localStorage.getItem(STORAGE_KEY);
-  return v === "ru" || v === "tg" || v === "en" ? v : "en"; // default English (jury)
+  return v === "ru" || v === "tg" || v === "en" ? v : "en";
 }
 
 interface I18nValue {
   lang: Lang;
   setLang: (l: Lang) => void;
-  /** The active dictionary. Use directly: `d.rotation.title`, `d.crops.rice`. */
   d: Dict;
 }
 
@@ -40,7 +39,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     try {
       window.localStorage.setItem(STORAGE_KEY, l);
     } catch {
-      /* storage unavailable — keep the in-memory choice */
     }
   }, []);
   const value = useMemo<I18nValue>(() => ({ lang, setLang, d: DICTS[lang] }), [lang, setLang]);
@@ -53,12 +51,10 @@ export function useI18n(): I18nValue {
   return ctx;
 }
 
-/** Localized crop name, falling back to the id if somehow missing. */
 export function cropName(d: Dict, id: string): string {
   return (d.crops as Record<string, string>)[id] ?? id;
 }
 
-/** Render one climate/soil insight item in the active language. */
 export function renderInsight(d: Dict, item: InsightItem): string {
   const p = item.params ?? {};
   switch (item.code) {
@@ -94,11 +90,6 @@ export interface RenderedReason {
   effect: string;
 }
 
-/**
- * Rebuild a reason's four phrases in the active language from its code + params
- * (numbers and crop ids), so translations substitute values into templates
- * rather than translating pre-built English sentences.
- */
 export function renderReason(d: Dict, r: Reason): RenderedReason {
   const source = d.reason.sourceName(r.source);
   const p = r.params;

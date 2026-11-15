@@ -34,45 +34,31 @@ from pathlib import Path
 
 import numpy as np
 
-# --- Configuration -----------------------------------------------------------
-
-# PO.DAAC collection for the JPL mascon CRI gridded product (RL06.3 V4).
 SHORT_NAME = "TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4"
 
-# Trend window. 2003 start skips the noisy first months of the GRACE record;
-# 2024 is the last full year. The ~11-month gap between GRACE (ends 2017-06) and
-# GRACE-FO (starts 2018-06) is simply absent from the time axis — a single
-# least-squares line is fitted across whatever months exist, which is the
-# standard, defensible way to handle the inter-mission gap.
 TREND_START_YEAR = 2003
 TREND_END_YEAR = 2024
 
-# Regions Kisht serves. If the whole-world grid exceeds the size budget we crop
-# to the union of these boxes. (lat_min, lat_max, lon_min, lon_max), lon -180..180.
 REGIONS = {
     "Central Asia": (35.0, 46.0, 55.0, 80.0),
     "South Asia": (6.0, 37.0, 60.0, 92.0),
     "East Africa": (-12.0, 18.0, 28.0, 52.0),
 }
 
-# Points we always print so we can sanity-check before wiring anything up.
 SAMPLE_POINTS = {
     "Vakhsh valley (TJ)": (37.9, 68.8),
     "Punjab (IN/PK, ~Ludhiana)": (30.9, 75.85),
     "Nakuru (KE)": (-0.30, 36.07),
 }
 
-SIZE_BUDGET_BYTES = 2 * 1024 * 1024  # 2 MB, per the brief
+SIZE_BUDGET_BYTES = 2 * 1024 * 1024
 
 OUT_PATH = Path(__file__).resolve().parents[2] / "public" / "data" / "grace_trend.json"
 DATA_DIR = Path(__file__).resolve().parent / "data"
 
-
-# --- Data access -------------------------------------------------------------
-
 def download_with_earthaccess() -> Path:
     """Log in to NASA Earthdata and download the mascon file. Returns its path."""
-    import earthaccess  # imported lazily so --file mode has no hard dependency
+    import earthaccess
 
     print("Logging in to NASA Earthdata (uses ~/.netrc or prompts)...")
     earthaccess.login(persist=True)
@@ -92,21 +78,16 @@ def download_with_earthaccess() -> Path:
         sys.exit("Download finished but no .nc file was produced.")
     return nc[0]
 
-
-# --- Trend computation -------------------------------------------------------
-
 def decimal_years(time_values) -> np.ndarray:
     """Convert an xarray/cftime/np.datetime64 time axis to decimal years."""
     import pandas as pd
 
     ts = pd.to_datetime(np.asarray(time_values))
     year = ts.year.to_numpy().astype(float)
-    # Day-of-year fraction; good enough for a slope over two decades.
     start_of_year = pd.to_datetime(dict(year=ts.year, month=1, day=1))
     next_year = pd.to_datetime(dict(year=ts.year + 1, month=1, day=1))
     frac = (ts - start_of_year) / (next_year - start_of_year)
     return year + frac.to_numpy()
-
 
 def per_cell_trend(lwe: np.ndarray, years: np.ndarray) -> np.ndarray:
     """
@@ -114,17 +95,14 @@ def per_cell_trend(lwe: np.ndarray, years: np.ndarray) -> np.ndarray:
 
     NaNs (ocean / fill) propagate to a NaN slope. Vectorised over all cells.
     """
-    t = years - years.mean()  # center for numerical stability
+    t = years - years.mean()
     denom = np.sum(t * t)
-    # Broadcast t over the lat/lon dims: slope = sum(t * (y - ybar)) / sum(t^2)
     tt = t[:, None, None]
     ybar = np.nanmean(lwe, axis=0)
     slope = np.nansum(tt * (lwe - ybar), axis=0) / denom
-    # Where a cell has no valid months, mark it NaN rather than 0.
     valid_counts = np.sum(~np.isnan(lwe), axis=0)
     slope = np.where(valid_counts >= 12, slope, np.nan)
     return slope
-
 
 def nearest_cell(slope, lats, lons, lat, lon):
     """Trend at the grid cell nearest (lat, lon). Handles 0..360 longitudes."""
@@ -133,9 +111,6 @@ def nearest_cell(slope, lats, lons, lat, lon):
     j = int(np.argmin(np.abs(lons - lon_q)))
     return slope[i, j], float(lats[i]), float(lons[j])
 
-
-# --- Export ------------------------------------------------------------------
-
 def to_minus180(lons: np.ndarray):
     """Return longitudes in -180..180 and the index order to apply to data."""
     if lons.max() <= 180.0:
@@ -143,7 +118,6 @@ def to_minus180(lons: np.ndarray):
     shifted = ((lons + 180.0) % 360.0) - 180.0
     order = np.argsort(shifted)
     return shifted[order], order
-
 
 def crop_region(slope, lats, lons):
     """Crop to the union bounding box of REGIONS; keep rectangular for a simple grid."""
@@ -155,14 +129,12 @@ def crop_region(slope, lats, lons):
     jj = np.where((lons >= lon_min) & (lons <= lon_max))[0]
     return slope[np.ix_(ii, jj)], lats[ii], lons[jj]
 
-
 def round_grid(slope):
     """Round to 0.1 cm/yr; NaN -> None (JSON null) to keep the file honest + small."""
     out = []
     for row in slope:
         out.append([None if np.isnan(v) else round(float(v), 1) for v in row])
     return out
-
 
 def build_json(slope, lats, lons, source_file: str) -> dict:
     return {
@@ -189,12 +161,8 @@ def build_json(slope, lats, lons, source_file: str) -> dict:
             "nlon": int(len(lons)),
             "lonConvention": "-180..180",
         },
-        # values[i][j] is the trend at lat0 + i*dlat, lon0 + j*dlon.
         "values": round_grid(slope),
     }
-
-
-# --- Main --------------------------------------------------------------------
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
@@ -233,11 +201,10 @@ def main() -> None:
 
     lats = da["lat"].values.astype(float)
     lons = da["lon"].values.astype(float)
-    lwe = da.values.astype(float)  # [time, lat, lon]
+    lwe = da.values.astype(float)
 
     slope = per_cell_trend(lwe, years)
 
-    # --- Sanity check: print the three sample points BEFORE writing anything ---
     print("\nGRACE total-water-storage trend, 2003-2024 (cm/year):")
     print("  negative = drying / water leaving storage\n")
     for name, (lat, lon) in SAMPLE_POINTS.items():
@@ -246,7 +213,6 @@ def main() -> None:
         print(f"  {name:<30} {shown}   (cell {clat:.2f}, {clon:.2f})")
     print()
 
-    # --- Export ---
     lons180, order = to_minus180(lons)
     slope = slope[:, order]
     lons = lons180
@@ -263,7 +229,6 @@ def main() -> None:
     if size > SIZE_BUDGET_BYTES:
         print(f"WARNING: {size/1024/1024:.1f} MB exceeds the 2 MB budget. "
               "Tighten REGIONS or drop --world.")
-
 
 if __name__ == "__main__":
     main()

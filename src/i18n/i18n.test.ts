@@ -23,7 +23,6 @@ const SITE: SiteConditions = {
   texture: "Sandy loam",
   groundwater: "falling",
   groundwaterTrendCm: -2.3,
-  // Steep + drying, so the erosion and soil-moisture reasons are generated too.
   elevationM: 1850,
   slopePct: 15,
   soilMoistureTrend: "falling",
@@ -49,7 +48,6 @@ describe("renderReason", () => {
     expect(plans.length).toBeGreaterThan(0);
     for (const [, dict] of Object.entries(DICTS)) {
       for (const plan of plans) {
-        // Includes the scenario reason (WHATIF active) and the GRACE reason (trend set).
         expect(plan.reasons.some((r) => r.code === "scenario")).toBe(true);
         expect(plan.reasons.some((r) => r.code === "groundwater")).toBe(true);
         expect(plan.reasons.some((r) => r.code === "erosion")).toBe(true);
@@ -60,7 +58,6 @@ describe("renderReason", () => {
           expect(out.source).toBeTruthy();
           expect(out.rule).toBeTruthy();
           expect(out.effect).toBeTruthy();
-          // dataPoint always carries at least one real number.
           expect(out.dataPoint).toMatch(/\d/);
         }
       }

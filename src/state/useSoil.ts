@@ -12,25 +12,13 @@ export type SoilStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 export interface UseSoilResult {
   status: SoilStatus;
   assessment: SoilAssessment | null;
-  /** True when the point has no soil (ocean/ice): "no farmland data here". */
   noData: boolean;
-  /** 0 when the point itself had soil; else the km to the nearest farmland pixel. */
   nearestKm: number;
-  /** True when soil came from a nearby pixel because the point was built-up. */
   builtUp: boolean;
-  /** True when the assessment came from the offline demo cache. */
   cached: boolean;
   reload: () => void;
 }
 
-/**
- * Fetch + assess the soil profile for a coordinate. Distinguishes three
- * non-happy outcomes: still loading, "no soil here" (unavailable, a normal
- * result for ocean/ice), and a real network/timeout error (retryable).
- *
- * For the three example points a pre-fetched copy ships in public/data/demo and
- * is used if the live call errors or is too slow, so the demo works offline.
- */
 export function useSoil(lat: number | null, lon: number | null): UseSoilResult {
   const [status, setStatus] = useState<SoilStatus>("idle");
   const [assessment, setAssessment] = useState<SoilAssessment | null>(null);

@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { classifyTrend, lookupGrace, toGroundwater, type GraceGrid } from "./grace";
 
-// A tiny 3×3 fixture: lat 30–32, lon 68–70, 1° cells.
 const GRID: GraceGrid = {
   meta: {
     source: "test",
@@ -13,18 +12,18 @@ const GRID: GraceGrid = {
   },
   grid: { lat0: 30, lon0: 68, dlat: 1, dlon: 1, nlat: 3, nlon: 3, lonConvention: "-180..180" },
   values: [
-    [-2.5, -0.3, 1.8], // lat 30
-    [null, 0.0, -1.0], // lat 31
-    [3.0, -4.2, 0.5], // lat 32
+    [-2.5, -0.3, 1.8],
+    [null, 0.0, -1.0],
+    [3.0, -4.2, 0.5],
   ],
 };
 
 describe("classifyTrend", () => {
   it("uses the ±1 cm/yr bands", () => {
     expect(classifyTrend(-2.5)).toBe("falling");
-    expect(classifyTrend(-1.0)).toBe("stable"); // boundary: not < -1
+    expect(classifyTrend(-1.0)).toBe("stable");
     expect(classifyTrend(-0.3)).toBe("stable");
-    expect(classifyTrend(1.0)).toBe("stable"); // boundary: not > 1
+    expect(classifyTrend(1.0)).toBe("stable");
     expect(classifyTrend(1.8)).toBe("rising");
   });
 });

@@ -138,7 +138,6 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
     }));
   }, [recs, d]);
 
-  // --- Climate card ---------------------------------------------------------
   const climateTone =
     summary.summerTempChangeC >= 0.5 || summary.annualPrecipChangePct <= -5 ? "warn" : "neutral";
   const climateLead = d.conditions.climateLead({
@@ -146,7 +145,6 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
     rainPct: `${signed(summary.annualPrecipChangePct, 0)}%`,
   });
 
-  // --- Water card -----------------------------------------------------------
   const graceWord = grace.status === "ready" && grace.result ? GRACE_LABEL(d, grace.result.category) : null;
   const moistureWord = moisture.hasData ? d.soilMoistureTrend[moisture.trend].toLowerCase() : null;
   const waterLead =
@@ -172,7 +170,6 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
       ? d.grace.trend({ cm: grace.result.trendCmPerYear })
       : undefined;
 
-  // --- Soil card ------------------------------------------------------------
   const a = soil.assessment;
   const soilBase = a
     ? d.conditions.soilLead({
@@ -187,7 +184,6 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
   const soilTone = a ? (a.socRating === "low" || a.phRating !== "neutral" ? "warn" : "good") : "neutral";
   const soilStat = a ? `${a.socPct.toFixed(1)}% C` : undefined;
 
-  // --- Land card ------------------------------------------------------------
   const t = terrain.status === "ready" ? terrain.result : null;
   const steep = !!t && t.slopePct > 8;
   const landLead = t
@@ -200,7 +196,7 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
 
   return (
     <>
-      {/* In short banner */}
+      {}
       <div className="inshort">
         <span className="inshort-tag">{d.conditions.inShort}</span>
         <div className="inshort-body">
@@ -210,7 +206,7 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
         </div>
       </div>
 
-      {/* 4 plain-language condition cards */}
+      {}
       <div className="condition-grid">
         <ConditionCard
           title={d.conditions.climate}
@@ -246,7 +242,7 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
         />
       </div>
 
-      {/* Charts kept, but tucked away */}
+      {}
       <details className="card panel-block measurements">
         <summary className="why-collapse-summary">
           <span className="block-h">{d.climate.seeMeasurements}</span>

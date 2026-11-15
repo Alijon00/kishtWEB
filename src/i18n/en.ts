@@ -1,10 +1,3 @@
-/**
- * English — the canonical dictionary. `Dict = typeof en` is the contract every
- * other language must satisfy, so TypeScript flags any missing key or mismatched
- * template signature. Templated strings are FUNCTIONS of their numbers/words, so
- * translations substitute values rather than concatenating English fragments.
- */
-
 const sgn = (n: number) => (n >= 0 ? "+" : "−") + Math.abs(n);
 
 const en = {

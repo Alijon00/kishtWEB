@@ -6,7 +6,6 @@ import ScoreBar from "./ScoreBar";
 
 interface PlanCardProps {
   plan: Plan;
-  /** Shown when provided — "See the evidence →" jumping to the Why screen. */
   onSeeEvidence?: () => void;
 }
 
@@ -20,7 +19,6 @@ export default function PlanCard({ plan, onSeeEvidence }: PlanCardProps) {
   const summerLabel = tropical ? d.rotation.seasonLong : d.rotation.seasonSummer;
   const winterLabel = tropical ? d.rotation.seasonShort : d.rotation.seasonWinter;
 
-  // Localized one-line "why", rebuilt from the rain + soil reason effects.
   const firstEffect = renderReason(d, plan.reasons[0]).effect;
   const soilReason = plan.reasons.find(
     (r) => r.code === "soilLegume" || r.code === "soilDiversity",

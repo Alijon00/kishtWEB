@@ -4,18 +4,9 @@ import { fieldLabel, type Field } from "../state/field";
 import CachedBadge from "./CachedBadge";
 import { useI18n } from "../i18n";
 
-/**
- * Tone for the soil chips. Organic carbon: good = green, low = red (a real
- * fertility problem), medium = neutral. pH: neutral = green; acidic/alkaline =
- * amber "caution" (off-ideal but workable), not the red used for a failure.
- */
 const socTone = (r: SocRating) => (r === "good" ? "down" : r === "low" ? "up" : "neutral");
 const phTone = (r: PhRating) => (r === "neutral" ? "down" : "warn");
 
-/**
- * "Your field" — the merged selected-point + soil card on screen 1: place name,
- * small coordinates, then the three SoilGrids rows (texture, organic carbon, pH).
- */
 export default function FieldCard({ field, soil }: { field: Field; soil: UseSoilResult }) {
   const { d } = useI18n();
   const a = soil.assessment;

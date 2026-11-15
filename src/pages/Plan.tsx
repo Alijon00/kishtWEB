@@ -18,7 +18,6 @@ interface PlanProps {
 const SUMMER_CROPS = CROPS.filter((c) => c.season === "summer");
 const WINTER_CROPS = CROPS.filter((c) => c.season === "winter");
 
-/** "What matters most?" presets → priority weights (engine untouched). */
 const PRIORITY_PRESETS = {
   balanced: { water: 5, soil: 5, income: 5, reliability: 5 },
   water: { water: 9, soil: 5, income: 3, reliability: 6 },
@@ -55,12 +54,6 @@ const scenKey = (s: Scenario): ScenKey =>
         ? "hot"
         : "now";
 
-/**
- * Step 3 — "Your next four years". Segmented "What matters most?" presets, a
- * "Test the future" scenario switch, "Now vs Kisht" side by side with worded
- * score bars and the season grid, then a collapsible "Why this plan". Controls
- * only reshape the inputs; the engine and data are untouched.
- */
 export default function Plan({ onPickField }: PlanProps) {
   const { d } = useI18n();
   const { field } = useField();
@@ -122,7 +115,6 @@ export default function Plan({ onPickField }: PlanProps) {
   const summerSeasonLabel = tropical ? d.rotation.seasonLong : d.current.summerLabel;
   const winterSeasonLabel = tropical ? d.rotation.seasonShort : d.current.winterLabel;
 
-  // --- "What matters most?" + collapsible crop/rotation controls ------------
   const controls = (
     <>
       <div className="card panel-block matters">

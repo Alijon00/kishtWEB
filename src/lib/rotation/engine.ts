@@ -19,8 +19,6 @@ import type {
   SlotSeason,
 } from "./types";
 
-// --- Step 1: apply the scenario ---------------------------------------------
-
 export function applyScenario(site: SiteConditions, scenario: Scenario): SiteConditions {
   const rainFactor = 1 + scenario.rainDeltaPct / 100;
   return {
@@ -37,20 +35,12 @@ export function applyScenario(site: SiteConditions, scenario: Scenario): SiteCon
   };
 }
 
-// --- Step 2: filter crops that can't grow here ------------------------------
-
-/**
- * Why a crop can't grow here at all (a HARD exclusion), or null if it can.
- * Note: high/low pH is NO LONGER an exclusion — it's a soft reliability penalty
- * in scoring, because soil pH is not a salinity (EC) measurement.
- */
 export function excludeReason(crop: Crop, site: SiteConditions): string | null {
   const effTmax = effectiveGrowingTmax(crop, site);
   if (effTmax > crop.maxTempC) {
     const season = crop.season === "summer" ? "summer" : "season";
     return `Too hot here: ${season} max ${effTmax.toFixed(0)} °C, limit ${crop.maxTempC} °C`;
   }
-  // Too cold for a warm-season crop (e.g. cotton/sesame in a cool highland).
   if (crop.season === "summer" && crop.minTempC != null && site.summerTmaxC < crop.minTempC) {
     return `Too cool here: summer max ${site.summerTmaxC.toFixed(0)} °C, needs ≥ ${crop.minTempC} °C`;
   }
@@ -62,11 +52,6 @@ interface FilterResult {
   excluded: ExcludedCrop[];
 }
 
-/**
- * Split crops into growable vs excluded. `selectable` (crop ids) is the
- * farmer's checkbox selection; crops outside it are simply not searched, but a
- * crop blocked by conditions is reported in `excluded` regardless of selection.
- */
 export function filterCrops(site: SiteConditions, selectable?: Set<string>): FilterResult {
   const allowed: Crop[] = [];
   const excluded: ExcludedCrop[] = [];
@@ -81,14 +66,11 @@ export function filterCrops(site: SiteConditions, selectable?: Set<string>): Fil
   return { allowed, excluded };
 }
 
-// --- Step 3: the 8 slots ----------------------------------------------------
-
 interface SlotSpec {
   year: number;
   season: SlotSeason;
 }
 
-/** The fixed 8 slots: each year's summer then winter. */
 export function slotSpecs(): SlotSpec[] {
   const specs: SlotSpec[] = [];
   for (const year of C.PLAN_YEARS) {
@@ -99,14 +81,12 @@ export function slotSpecs(): SlotSpec[] {
 
 const isCereal = (c: Crop) => c.family === C.CEREAL_FAMILY;
 
-/** A year's two slots, for rendering: summer crop + winter crop (null = fallow). */
 export interface YearGroup {
   year: number;
   summer: Crop | null;
   winter: Crop | null;
 }
 
-/** Group the 8 flat slots into 4 years, each with its summer and winter crop. */
 export function groupSlotsByYear(slots: PlanSlot[]): YearGroup[] {
   const map = new Map<number, YearGroup>();
   for (const s of slots) {
@@ -118,29 +98,14 @@ export function groupSlotsByYear(slots: PlanSlot[]): YearGroup[] {
   return [...map.values()].sort((a, b) => a.year - b.year);
 }
 
-/** How many crops a year may carry: one for dry rainfed land, otherwise two. */
 export function maxCropsPerYear(site: SiteConditions): number {
   const rainfed =
     site.annualRainMm < C.RAINFED_SINGLE_SEASON_MM && site.groundwater === "unknown";
   return rainfed ? 1 : C.MAX_CROPS_PER_YEAR;
 }
 
-// --- Step 4: beam-search the slot assignments -------------------------------
-
 type Assignment = (Crop | null)[];
 
-/**
- * Enumerate good 8-slot plans with a beam search (width BEAM_WIDTH). Hard rules
- * enforced as we build, slot by slot:
- *  - a crop only goes in a slot of its own season; a slot may be left fallow
- *  - never the same plant family in two ADJACENT slots (fallow breaks the chain)
- *  - at most `maxPerYear` crops in any year (1 for dry rainfed, else 2)
- *  - each year carries at least one cereal, unless no cereal is available
- *  - at least one legume somewhere when soil carbon is low
- * Partial plans are ranked each step by their (unweighted) score so the beam
- * keeps the most promising — full combinatorics (up to 15^8) never materialise.
- */
-/** How a beam pass weights the four scores when ranking partial plans. */
 type RankWeights = { water: number; soil: number; income: number; reliability: number };
 
 export function solve(
@@ -173,8 +138,7 @@ export function solve(
   let beam: Assignment[] = [[]];
   for (let k = 0; k < specs.length; k++) {
     const spec = specs[k];
-    const seasonStart = spec.season === "summer"; // summer is the first slot of a year
-    // A forced slot (a perennial stand) admits only its fixed crop, unchecked.
+    const seasonStart = spec.season === "summer";
     const fixed = forced[k];
     const candidates: (Crop | null)[] =
       fixed !== undefined ? [fixed] : [null, ...bySeason[spec.season]];
@@ -185,10 +149,8 @@ export function solve(
       const yearCount = seasonStart ? 0 : state[k - 1] != null ? 1 : 0;
       for (const cand of candidates) {
         if (fixed === undefined && cand) {
-          if (prev && prev.family === cand.family) continue; // no same family adjacent
-          if (yearCount >= maxPerYear) continue; // year already full
-          // No same crop in the same season more than MAX_CONSECUTIVE_SAME_SEASON
-          // years running (slots two apart share a season).
+          if (prev && prev.family === cand.family) continue;
+          if (yearCount >= maxPerYear) continue;
           let run = 1;
           for (let j = k - 2; j >= 0 && state[j]?.id === cand.id; j -= 2) run++;
           if (run > C.MAX_CONSECUTIVE_SAME_SEASON) continue;
@@ -197,9 +159,6 @@ export function solve(
       }
     }
 
-    // End of a year (winter slot placed): require a cereal — unless a perennial
-    // stand occupies the year (a forage year legitimately has no cereal) or no
-    // cereal is available at all.
     let filtered = next;
     if (!seasonStart && cerealsAvailable) {
       filtered = next.filter((a) => {
@@ -214,15 +173,9 @@ export function solve(
     beam = filtered.slice(0, C.BEAM_WIDTH);
   }
 
-  // Whole-plan rule: a legume somewhere when soil carbon is low.
   return beam.filter((a) => !socLow || a.some((c) => c?.fixesNitrogen));
 }
 
-/**
- * Plans that hold a perennial (alfalfa) as a contiguous multi-year stand filling
- * BOTH seasons of each stand year (no second crop those years), for at least
- * PERENNIAL_MIN_YEARS years. The remaining years are filled by the normal beam.
- */
 export function perennialBlockPlans(
   annuals: Crop[],
   perennial: Crop,
@@ -230,7 +183,7 @@ export function perennialBlockPlans(
   socLow: boolean,
   maxPerYear: number,
 ): Assignment[] {
-  if (maxPerYear < 2) return []; // dry rainfed land can't carry a forage stand
+  if (maxPerYear < 2) return [];
   const years = C.PLAN_YEARS.length;
   const out: Assignment[] = [];
   for (const len of C.PERENNIAL_BLOCK_YEARS) {
@@ -245,8 +198,6 @@ export function perennialBlockPlans(
   }
   return out;
 }
-
-// --- Step 5: score ----------------------------------------------------------
 
 interface Scored {
   slots: PlanSlot[];
@@ -269,7 +220,6 @@ function toScored(a: Assignment, site: SiteConditions, pr: Priorities): Scored {
   return { slots, scores, matchPct: matchPct(scores, pr), key: slotKey(slots) };
 }
 
-/** How many of the 8 slots two plans share (same crop id, or both fallow). */
 function sharedSlots(a: PlanSlot[], b: PlanSlot[]): number {
   let shared = 0;
   for (let i = 0; i < a.length; i++) {
@@ -281,7 +231,6 @@ function sharedSlots(a: PlanSlot[], b: PlanSlot[]): number {
 const differsEnough = (a: PlanSlot[], b: PlanSlot[]) =>
   sharedSlots(a, b) <= C.MAX_SHARED_SLOTS;
 
-/** Deterministic "pick the max by `metric`, then stable tie-breaks". */
 function pickBest(pool: Scored[], metric: (s: Scored) => number): Scored | undefined {
   let best: Scored | undefined;
   for (const s of pool) {
@@ -301,11 +250,8 @@ function pickBest(pool: Scored[], metric: (s: Scored) => number): Scored | undef
 const plantedCrops = (slots: PlanSlot[]): Crop[] =>
   slots.map((s) => s.crop).filter((c): c is Crop => c != null);
 
-/** A plan whose crops are all within the water-saver need ceiling. */
 const isFrugal = (s: Scored) =>
   plantedCrops(s.slots).every((c) => waterNeedMid(c) <= C.WATER_SAVER_MAX_NEED_MM);
-
-// --- Step 6: reasons & assembly ---------------------------------------------
 
 const signed = (n: number) => `${n >= 0 ? "+" : "−"}${Math.abs(Math.round(n))}`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -319,7 +265,6 @@ function buildReasons(
   const reasons: Reason[] = [];
   const crops = plantedCrops(slots);
 
-  // Rainfall → water demand.
   const thirstyCrops = [...new Set(crops.filter((c) => c.waterNeedMm[1] >= 1000))];
   const thirstyNames = thirstyCrops.map((c) => c.name.toLowerCase());
   reasons.push({
@@ -340,7 +285,6 @@ function buildReasons(
     },
   });
 
-  // Summer heat → filtering.
   const hotExcluded = excluded.find((e) => e.reason.startsWith("Too hot"));
   reasons.push({
     dataPoint: `Summer max ${site.summerTmaxC.toFixed(0)} °C`,
@@ -357,7 +301,6 @@ function buildReasons(
     },
   });
 
-  // Soil carbon → legume / diversity.
   const legumeSlot = slots.find((s) => s.crop?.fixesNitrogen);
   if (site.socLevel === "low" && legumeSlot && legumeSlot.crop) {
     reasons.push({
@@ -389,7 +332,6 @@ function buildReasons(
     });
   }
 
-  // Groundwater (GRACE-FO) → water risk. Only when we actually have a trend.
   if (typeof site.groundwaterTrendCm === "number") {
     const trend = site.groundwaterTrendCm;
     const falling = site.groundwater === "falling";
@@ -403,7 +345,6 @@ function buildReasons(
     });
   }
 
-  // Slope (SRTM) → erosion risk. Only on steep land where we have a slope value.
   if (typeof site.slopePct === "number" && site.slopePct > C.EROSION_SLOPE_PCT) {
     const hasCover = crops.some((c) => c.perennial || c.fixesNitrogen);
     reasons.push({
@@ -424,7 +365,6 @@ function buildReasons(
     });
   }
 
-  // Root-zone soil moisture (GWETROOT) → reliability of drought-tolerant crops.
   if (site.soilMoistureTrend) {
     const falling = site.soilMoistureTrend === "falling";
     const base = site.soilMoistureBaseline;
@@ -448,7 +388,6 @@ function buildReasons(
     });
   }
 
-  // Active scenario → stress test.
   if (scenario.rainDeltaPct !== 0 || scenario.tempDeltaC !== 0) {
     const parts: string[] = [];
     if (scenario.rainDeltaPct !== 0) parts.push(`${scenario.rainDeltaPct}% rain`);
@@ -505,8 +444,6 @@ const makePlanFromScored = (
   scenario: Scenario,
 ) => makePlan(id, title, badge, s.slots, s.scores, s.matchPct, site, excluded, scenario);
 
-// --- Public entry point ------------------------------------------------------
-
 export function buildPlans(
   rawSite: SiteConditions,
   priorities: Priorities,
@@ -518,17 +455,11 @@ export function buildPlans(
   const socLow = site.socLevel === "low";
   const maxPerYear = maxCropsPerYear(site);
 
-  // Run the beam a few times with different rankings and union the results, so
-  // the water-saver and soil-builder archetypes survive even when a balanced
-  // ranking would prune them (e.g. a high-value cereal crowding out low-water
-  // options). Dedupe by slot signature.
   const passes: RankWeights[] = [
-    { water: 1, soil: 1, income: 1, reliability: 1 }, // balanced (best fit)
-    { water: 3, soil: 1, income: 0.5, reliability: 1 }, // water-focused
-    { water: 1, soil: 3, income: 0.5, reliability: 1 }, // soil-focused
+    { water: 1, soil: 1, income: 1, reliability: 1 },
+    { water: 3, soil: 1, income: 0.5, reliability: 1 },
+    { water: 1, soil: 3, income: 0.5, reliability: 1 },
   ];
-  // Alfalfa (and any perennial) is placed only as a multi-year block, never as a
-  // single annual slot — so keep it out of the normal beam's candidate pool.
   const annuals = allowed.filter((c) => !c.perennial);
   const perennial = allowed.find((c) => c.perennial);
 
@@ -555,13 +486,9 @@ export function buildPlans(
     return { plans, excluded, allowed, adjusted: site };
   }
 
-  // 1) Best fit — highest weighted match.
   const best = pickBest(scored, (s) => s.matchPct)!;
   plans.push(makePlanFromScored("best-fit", "Best fit", "Best fit", best, site, excluded, scenario));
 
-  // 2) Water saver — best water score among frugal plans. Prefer plans that
-  // differ enough from best-fit, but fall back to any distinct frugal plan so we
-  // still offer a water option rather than dropping the card.
   const frugal = scored.filter((s) => isFrugal(s) && s.key !== best.key);
   const waterDistinct = frugal.filter((s) => differsEnough(s.slots, best.slots));
   const water =
@@ -572,12 +499,10 @@ export function buildPlans(
     );
   }
 
-  // 3) Soil builder OR highest income — whichever differs most from plans 1 & 2.
   const usedKeys = new Set([best.key, water?.key].filter(Boolean) as string[]);
   const distinctPool = scored.filter(
     (s) => differsEnough(s.slots, best.slots) && (!water || differsEnough(s.slots, water.slots)),
   );
-  // Fall back to any not-yet-used plan if the distinctness filter emptied the pool.
   const thirdPool = (distinctPool.length ? distinctPool : scored).filter(
     (s) => !usedKeys.has(s.key),
   );
@@ -608,15 +533,6 @@ export function buildPlans(
   return { plans, excluded, allowed, adjusted: site };
 }
 
-// --- "Now" comparison --------------------------------------------------------
-
-/**
- * Score the farmer's CURRENT practice — a crop repeated every year in each
- * season (null = fallow) — the exact same way, so the Rotation screen can show
- * how the proposed plans compare with what they do today. Not generated by the
- * solver: it bypasses the hard rules on purpose (rice–wheat breaks them, and
- * that's the point of the comparison).
- */
 export function buildCurrentPlan(
   rawSite: SiteConditions,
   priorities: Priorities,
@@ -652,7 +568,6 @@ export function buildCurrentPlan(
   );
 }
 
-// Re-export scoring helpers that tests and screens use directly.
 export {
   reliabilityScore,
   waterScore,

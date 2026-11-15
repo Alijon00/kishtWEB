@@ -14,7 +14,6 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-// Vite serves the marker images as URLs; wire them up so the default pin shows.
 const fieldIcon = L.icon({
   iconUrl: markerIcon,
   iconRetinaUrl: markerIcon2x,
@@ -27,9 +26,6 @@ const fieldIcon = L.icon({
 
 type Layer = "map" | "satellite";
 
-// Zoom limits: Esri imagery has no native tiles past 17, so we cap the native
-// fetch at 17 but still let the user zoom to 18 (Leaflet upscales the last
-// tiles instead of showing empty squares).
 const MAX_NATIVE_ZOOM = 17;
 const MAX_ZOOM = 18;
 
@@ -37,22 +33,13 @@ interface FieldMapProps {
   lat: number | null;
   lon: number | null;
   onPick: (lat: number, lon: number) => void;
-  /** Search bar rendered in the top overlay bar, left of the layer toggle. */
   searchSlot?: ReactNode;
-  /** Controls rendered bottom-left over the map (coords, "use my location"). */
   children?: ReactNode;
 }
 
-/**
- * Leaflet measures the container once at init. When the map mounts inside a
- * grid/flex layout (or before fonts/layout settle), it can read a zero/partial
- * height and render tiles only in a strip with grey below. invalidateSize()
- * forces a re-measure — we run it after mount and whenever the container resizes.
- */
 function ResizeFix() {
   const map = useMap();
   useEffect(() => {
-    // Re-measure once layout has settled after the first paint.
     const raf = requestAnimationFrame(() => map.invalidateSize());
 
     const container = map.getContainer();
@@ -67,7 +54,6 @@ function ResizeFix() {
   return null;
 }
 
-/** Captures map clicks and reports the picked coordinate. */
 function ClickHandler({ onPick }: { onPick: (lat: number, lon: number) => void }) {
   useMapEvents({
     click(e) {
@@ -77,7 +63,6 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lon: number) => void }
   return null;
 }
 
-/** Flies the map to the selected point whenever it changes. */
 function Recenter({ lat, lon }: { lat: number | null; lon: number | null }) {
   const map = useMap();
   if (lat != null && lon != null) {
@@ -93,8 +78,6 @@ export default function FieldMap({ lat, lon, onPick, searchSlot, children }: Fie
   const { d } = useI18n();
   const [layer, setLayer] = useState<Layer>("satellite");
 
-  // Default view: a wide look at Central Asia until a point is picked, then
-  // zoom in on the field. Geolocation is never requested automatically.
   const center: [number, number] = lat != null && lon != null ? [lat, lon] : [38, 68];
   const zoom = lat != null && lon != null ? 12 : 5;
 

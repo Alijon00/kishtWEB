@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseSoilGrids } from "./soilgrids";
 
-/** Build a SoilGrids-shaped layer with d_factor 10 and the three 0–30 cm depths. */
 function layer(name: string, means: [number, number, number], dFactor = 10) {
   return {
     name,
@@ -19,12 +18,11 @@ describe("parseSoilGrids", () => {
     const json = {
       properties: {
         layers: [
-          // Uniform 300 g/kg clay -> 30% at every depth -> weighted 30%.
           layer("clay", [300, 300, 300]),
-          layer("sand", [200, 200, 200]), // 20%
-          layer("silt", [500, 500, 500]), // 50%
-          layer("phh2o", [70, 70, 70]), // pH 7.0
-          layer("soc", [100, 100, 100]), // 10 g/kg -> 1.0% OC
+          layer("sand", [200, 200, 200]),
+          layer("silt", [500, 500, 500]),
+          layer("phh2o", [70, 70, 70]),
+          layer("soc", [100, 100, 100]),
         ],
       },
     };
@@ -43,7 +41,7 @@ describe("parseSoilGrids", () => {
           layer("clay", [100, 100, 100]),
           layer("sand", [100, 100, 100]),
           layer("silt", [100, 100, 100]),
-          layer("phh2o", [60, 70, 80]), // weighted (60*5+70*10+80*15)/30 = 73.33 -> pH 7.333
+          layer("phh2o", [60, 70, 80]),
           layer("soc", [100, 100, 100]),
         ],
       },

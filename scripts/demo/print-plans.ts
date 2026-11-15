@@ -1,13 +1,3 @@
-/**
- * Print the three rotation plans + the "Now" card for Vakhsh, Punjab and Nakuru.
- *
- *   npx tsx scripts/demo/print-plans.ts
- *
- * If public/data/demo/{id}.json exist (run build-demo-cache.ts first) it uses the
- * REAL cached NASA POWER / SoilGrids / GRACE values. Otherwise it falls back to
- * representative regional inputs and says so — handy for eyeballing the engine
- * without a network fetch.
- */
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -103,7 +93,6 @@ async function main() {
       }
     }
 
-    // Soil-score breakdown for two different plans (NOW vs best-fit), "as now".
     const best = buildPlans(site, PR, SCENARIOS[0].s).plans[0];
     const now = buildCurrentPlan(site, PR, SCENARIOS[0].s, place.current);
     console.log(`\n  SOIL BREAKDOWN (as now):`);

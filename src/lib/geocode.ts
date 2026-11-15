@@ -1,14 +1,3 @@
-/**
- * Nominatim (OpenStreetMap) geocoding.
- *
- * Usage-policy notes (https://operations.osmfoundation.org/policies/nominatim/):
- * - We only call this on an explicit Enter / button press, never per keystroke.
- * - At most one in-flight request at a time (callers disable the control while
- *   a request runs), which keeps us well under the 1 req/sec limit.
- * - Browsers set a Referer header automatically identifying this app's origin;
- *   that is our identification (custom User-Agent can't be set from a browser).
- */
-
 const SEARCH_URL = "https://nominatim.openstreetmap.org/search";
 const REVERSE_URL = "https://nominatim.openstreetmap.org/reverse";
 
@@ -24,7 +13,6 @@ interface NominatimSearchItem {
   display_name: string;
 }
 
-/** Search for places by free-text query. Returns up to 5 candidates. */
 export async function searchPlace(
   query: string,
   opts: { signal?: AbortSignal } = {},
@@ -55,7 +43,6 @@ interface NominatimReverse {
   address?: Record<string, string>;
 }
 
-/** Build a short, human place name from Nominatim's address parts. */
 function shortName(data: NominatimReverse): string | null {
   const a = data.address;
   if (!a) return data.display_name ?? null;
@@ -67,10 +54,6 @@ function shortName(data: NominatimReverse): string | null {
   return data.display_name ?? null;
 }
 
-/**
- * Reverse-geocode coordinates to a readable place name.
- * Returns null on any failure so callers can fall back to showing coordinates.
- */
 export async function reverseGeocode(
   lat: number,
   lon: number,

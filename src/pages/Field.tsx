@@ -25,13 +25,10 @@ export default function Field({ onContinue }: FieldProps) {
   const lat = field?.lat ?? null;
   const lon = field?.lon ?? null;
   const soil = useSoil(lat, lon);
-  // Prefetch the screen-2 datasets the moment a field is picked, so screen 2
-  // opens instantly and we can show live fetch status here.
   const climate = useClimate(lat, lon);
   const grace = useGroundwater(lat, lon);
   const terrain = useTerrain(lat, lon);
 
-  // Prefer the MapLibre globe; fall back to the flat Leaflet map with no WebGL.
   const [MapComponent] = useState(() => (hasWebGL() ? GlobeMap : FieldMap));
 
   const [query, setQuery] = useState("");
@@ -43,7 +40,7 @@ export default function Field({ onContinue }: FieldProps) {
 
   const runSearch = () => {
     const q = query.trim();
-    if (!q || searching) return; // one request at a time keeps us under 1/sec
+    if (!q || searching) return;
     setSearching(true);
     setSearchMsg("");
     setResults([]);
@@ -83,7 +80,6 @@ export default function Field({ onContinue }: FieldProps) {
 
   const showExamples = searchFocused && !query.trim() && results.length === 0;
 
-  // --- "NASA data for this field" status rows (also drives the prefetch) ----
   const slopeLabel = (s: number) =>
     s <= SLOPE_FLAT_PCT ? d.terrain.flat : s <= EROSION_SLOPE_PCT ? d.terrain.gentle : d.terrain.steep;
   const climateState: DataState =
@@ -176,7 +172,7 @@ export default function Field({ onContinue }: FieldProps) {
               </div>
             }
           >
-            {/* Coordinates + "use my location" — bottom-left of the map */}
+            {}
             {field && (
               <span className="map-coords coord">
                 {field.lat.toFixed(4)}, {field.lon.toFixed(4)}

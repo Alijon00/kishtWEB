@@ -1,11 +1,5 @@
 import { useI18n } from "../i18n";
 
-/**
- * "NASA data used" footer block — a plain-language summary of which datasets
- * feed the plan and what each one contributes, plus an honest note on the
- * US-only datasets we deliberately don't use. Shown at the foot of the plan
- * screen and mirrored in the README.
- */
 export default function NasaDataBlock() {
   const { d } = useI18n();
   return (

@@ -15,11 +15,9 @@ export const STEPS: Step[] = [
 interface HeaderProps {
   activeStep: number;
   onStep: (step: number) => void;
-  /** Steps 2–3 need a field; step 1 is always available. */
   hasField: boolean;
 }
 
-/** Small leaf mark for the wordmark. */
 function Leaf() {
   return (
     <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" className="brand-leaf">

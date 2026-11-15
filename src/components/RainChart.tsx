@@ -11,7 +11,6 @@ import {
 import { useI18n } from "../i18n";
 
 export interface RainPoint {
-  /** Short month label, e.g. "Jan". */
   month: string;
   baseline: number;
   recent: number;

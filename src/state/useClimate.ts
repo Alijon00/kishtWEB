@@ -12,22 +12,11 @@ export type ClimateStatus = "idle" | "loading" | "ready" | "error";
 export interface UseClimateResult {
   status: ClimateStatus;
   records: MonthlyRecord[] | null;
-  /** True when the records came from the offline demo cache, not a live call. */
   cached: boolean;
   error: string;
   reload: () => void;
 }
 
-/**
- * Fetch the monthly NASA POWER record for a point. Shared by the Climate screen
- * (Part 2) logic and the Rotation/Why screens (Part 4) so both run off the same
- * data, each mounting independently as the user moves between steps.
- *
- * For the three example points a pre-fetched copy ships in public/data/demo;
- * if the live call errors, or hasn't answered within DEMO_FALLBACK_TIMEOUT_MS,
- * we fall back to it and flag the result as cached so the demo survives a dead
- * network.
- */
 export function useClimate(lat: number | null, lon: number | null): UseClimateResult {
   const [status, setStatus] = useState<ClimateStatus>("idle");
   const [records, setRecords] = useState<MonthlyRecord[] | null>(null);
@@ -82,7 +71,6 @@ export function useClimate(lat: number | null, lon: number | null): UseClimateRe
         tryDemo(() => fail(err instanceof Error ? err.message : ""));
       });
 
-    // If the live call is simply slow, fall back to the cache (example points).
     if (example) {
       window.setTimeout(() => tryDemo(() => {}), DEMO_FALLBACK_TIMEOUT_MS);
     }

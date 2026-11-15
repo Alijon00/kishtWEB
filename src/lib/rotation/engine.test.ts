@@ -18,7 +18,6 @@ const NOW: Scenario = { rainDeltaPct: 0, tempDeltaC: 0 };
 const HOT: Scenario = { rainDeltaPct: 0, tempDeltaC: 2 };
 const BOTH: Scenario = { rainDeltaPct: -20, tempDeltaC: 2 };
 
-/** Temperate, medium soil, has groundwater → double-crops. */
 const MILD: SiteConditions = {
   seasonKind: "temperate",
   summerTempC: 26,
@@ -37,7 +36,6 @@ const MILD: SiteConditions = {
   groundwater: "stable",
 };
 
-/** Hot, monsoon-summer, dry-winter, depleting aquifer (Punjab-like). */
 const PUNJAB: SiteConditions = {
   seasonKind: "temperate",
   summerTempC: 32,
@@ -57,7 +55,6 @@ const PUNJAB: SiteConditions = {
   groundwaterTrendCm: -3.0,
 };
 
-/** Cool volcanic highland (Nakuru-like). */
 const COOL_HIGHLAND: SiteConditions = {
   seasonKind: "tropical",
   summerTempC: 18,
@@ -76,7 +73,6 @@ const COOL_HIGHLAND: SiteConditions = {
   groundwater: "stable",
 };
 
-/** Hot arid irrigated valley (Vakhsh-like): cotton country, has irrigation. */
 const VAKHSH: SiteConditions = {
   seasonKind: "temperate",
   summerTempC: 29,
@@ -96,7 +92,6 @@ const VAKHSH: SiteConditions = {
   groundwaterTrendCm: -0.7,
 };
 
-/** Dry, rainfed, no known groundwater → one crop a year. */
 const RAINFED: SiteConditions = {
   ...MILD,
   annualRainMm: 220,
@@ -105,7 +100,6 @@ const RAINFED: SiteConditions = {
   groundwater: "unknown",
 };
 
-/** Very alkaline (salinity-risk) soil. */
 const SALINE: SiteConditions = { ...PUNJAB, ph: 8.9 };
 
 const ids = (slots: PlanSlot[]) => slots.map((s) => s.crop?.id ?? null);
@@ -117,9 +111,9 @@ describe("applyScenario", () => {
     const s = applyScenario(MILD, BOTH);
     expect(s.summerTmaxC).toBe(35);
     expect(s.summerTempC).toBe(28);
-    expect(s.annualRainMm).toBeCloseTo(480, 6); // 600 * 0.8
-    expect(s.summerRainMm).toBeCloseTo(320, 6); // 400 * 0.8
-    expect(s.winterRainMm).toBeCloseTo(160, 6); // 200 * 0.8
+    expect(s.annualRainMm).toBeCloseTo(480, 6);
+    expect(s.summerRainMm).toBeCloseTo(320, 6);
+    expect(s.winterRainMm).toBeCloseTo(160, 6);
   });
 });
 
@@ -138,10 +132,8 @@ describe("filterCrops — hard vs soft", () => {
   it("does NOT exclude salt-sensitive crops on very alkaline soil (soft penalty instead)", () => {
     const { excluded, allowed } = filterCrops(SALINE);
     expect(excluded.some((e) => /alkaline|salin|pH/i.test(e.reason))).toBe(false);
-    expect(allowed.some((c) => c.id === "chickpea")).toBe(true); // salt-sensitive, still allowed
+    expect(allowed.some((c) => c.id === "chickpea")).toBe(true);
   });
-
-  // --- Region sanity: crops actually grown there survive "as now" --------------
 
   it("does NOT exclude maize in a cool tropical highland (Nakuru)", () => {
     const { excluded, allowed } = filterCrops(COOL_HIGHLAND);
@@ -180,7 +172,6 @@ describe("8-slot season model", () => {
       const { plans } = buildPlans(site, PR, NOW);
       for (const p of plans) {
         for (const s of p.slots) {
-          // A perennial stand occupies both seasons; annuals must match.
           if (s.crop && !s.crop.perennial) expect(s.crop.season).toBe(s.season);
         }
       }
@@ -208,7 +199,6 @@ describe("main-cereal rule", () => {
     for (const p of plans) {
       for (const year of [2027, 2028, 2029, 2030]) {
         const yearSlots = p.slots.filter((s) => s.year === year);
-        // A perennial-stand year is exempt from the cereal requirement.
         if (yearSlots.some((s) => s.crop?.perennial)) continue;
         expect(yearSlots.some((s) => s.crop?.family === "Poaceae")).toBe(true);
       }
@@ -231,7 +221,7 @@ describe("main-cereal rule", () => {
 
 describe("legume rule when soil carbon is low", () => {
   it("includes at least one legume slot", () => {
-    const { plans } = buildPlans(PUNJAB, PR, NOW); // socLevel low
+    const { plans } = buildPlans(PUNJAB, PR, NOW);
     expect(plans.length).toBeGreaterThan(0);
     for (const p of plans) {
       expect(p.slots.some((s) => s.crop?.fixesNitrogen)).toBe(true);
@@ -242,7 +232,7 @@ describe("legume rule when soil carbon is low", () => {
 describe("single-season mode for dry rainfed land", () => {
   it("caps a dry, no-groundwater site at one crop per year", () => {
     expect(maxCropsPerYear(RAINFED)).toBe(1);
-    expect(maxCropsPerYear(PUNJAB)).toBe(2); // falling aquifer = irrigation exists
+    expect(maxCropsPerYear(PUNJAB)).toBe(2);
     const { plans } = buildPlans(RAINFED, PR, NOW);
     expect(plans.length).toBeGreaterThan(0);
     for (const p of plans) {
@@ -275,14 +265,14 @@ describe("water saver excludes thirsty crops", () => {
 
 describe("pH is a soft reliability penalty, not an exclusion", () => {
   it("docks a salt-sensitive crop's reliability on alkaline soil", () => {
-    const chickpea = CROP_BY_ID.chickpea; // salinityTolerance 1
+    const chickpea = CROP_BY_ID.chickpea;
     const neutral = cropReliability(chickpea, { ...PUNJAB, ph: 7.0 });
     const alkaline = cropReliability(chickpea, { ...PUNJAB, ph: 8.9 });
     expect(alkaline).toBeLessThan(neutral);
   });
 
   it("leaves a salt-tolerant crop's reliability unchanged by pH", () => {
-    const barley = CROP_BY_ID.barley; // salinityTolerance 3
+    const barley = CROP_BY_ID.barley;
     const neutral = cropReliability(barley, { ...PUNJAB, ph: 7.0 });
     const alkaline = cropReliability(barley, { ...PUNJAB, ph: 8.9 });
     expect(alkaline).toBeCloseTo(neutral, 6);
@@ -310,7 +300,6 @@ describe("score spread (not everything 8.2 / 10)", () => {
   });
 
   it("water score separates a dry-season crop from a monsoon crop", () => {
-    // Winter crop faces tiny winter rain → real deficit; summer crop is rain-fed.
     const winterOnly: PlanSlot[] = slotSpecs().map((spec) => ({
       year: spec.year,
       season: spec.season,
@@ -327,10 +316,6 @@ describe("score spread (not everything 8.2 / 10)", () => {
 
 describe("What if? changes the recommended plan", () => {
   it("shifts the best plan under +2 °C / −20 % rain (Punjab, neutral priorities)", () => {
-    // With neutral priorities today's best fit still leans on higher-value, less
-    // drought-hardy crops; the harsher scenario pushes it toward tolerant ones.
-    // (Under water/reliability-weighted priorities the robust plan is already
-    // chosen today, so it legitimately wouldn't change — hence neutral here.)
     const neutral: Priorities = { water: 5, soil: 5, income: 5, reliability: 5 };
     const now = buildPlans(PUNJAB, neutral, NOW).plans.find((p) => p.id === "best-fit")!;
     const both = buildPlans(PUNJAB, neutral, BOTH).plans.find((p) => p.id === "best-fit")!;
@@ -372,18 +357,15 @@ describe("perennial (alfalfa) is a multi-year block", () => {
     expect(plans.length).toBeGreaterThan(0);
     const specs = slotSpecs();
     for (const a of plans) {
-      // Collect the years that contain alfalfa.
       const alfYears = new Set<number>();
       a.forEach((crop, i) => {
         if (crop?.id === "alfalfa") alfYears.add(specs[i].year);
       });
       expect(alfYears.size).toBeGreaterThanOrEqual(2);
-      // Each alfalfa year must have alfalfa in BOTH slots (no second crop).
       for (const year of alfYears) {
         const yearSlots = a.filter((_, i) => specs[i].year === year);
         expect(yearSlots.every((c) => c?.id === "alfalfa")).toBe(true);
       }
-      // The alfalfa years must be contiguous.
       const sorted = [...alfYears].sort((x, y) => x - y);
       for (let i = 1; i < sorted.length; i++) expect(sorted[i] - sorted[i - 1]).toBe(1);
     }
@@ -396,7 +378,6 @@ describe("no crop sits in the same season more than 2 years running", () => {
     for (const site of [MILD, PUNJAB, COOL_HIGHLAND, VAKHSH]) {
       const { plans } = buildPlans(site, PR, NOW);
       for (const p of plans) {
-        // Walk each season's slots (step 2) and check run length.
         for (let start = 0; start < 2; start++) {
           let run = 1;
           for (let k = start + 2; k < specs.length; k += 2) {
@@ -444,7 +425,7 @@ describe("erosion rule on steep land (SRTM slope)", () => {
 
   it("makes no adjustment on flat land or without a slope value", () => {
     expect(erosionAdjustment(maizeEverySummer, FLAT)).toBe(0);
-    expect(erosionAdjustment(maizeEverySummer, COOL_HIGHLAND)).toBe(0); // no slopePct
+    expect(erosionAdjustment(maizeEverySummer, COOL_HIGHLAND)).toBe(0);
   });
 
   it("penalises row crops (maize) grown two years running on a steep slope", () => {
@@ -485,12 +466,12 @@ describe("falling root-zone soil moisture (GWETROOT) raises drought-tolerant rel
   const STABLE: SiteConditions = { ...PUNJAB, soilMoistureTrend: "stable" };
 
   it("raises reliability for a drought-tolerant crop when the soil is drying", () => {
-    const sorghum = CROP_BY_ID.sorghum; // droughtTolerance 3
+    const sorghum = CROP_BY_ID.sorghum;
     expect(cropReliability(sorghum, DRYING)).toBeGreaterThan(cropReliability(sorghum, STABLE));
   });
 
   it("leaves a drought-sensitive crop's reliability unchanged", () => {
-    const rice = CROP_BY_ID.rice; // droughtTolerance 1
+    const rice = CROP_BY_ID.rice;
     expect(cropReliability(rice, DRYING)).toBeCloseTo(cropReliability(rice, STABLE), 6);
   });
 
@@ -505,7 +486,7 @@ describe("falling root-zone soil moisture (GWETROOT) raises drought-tolerant rel
   });
 
   it("adds no soil-moisture reason when the trend is unknown", () => {
-    const { plans } = buildPlans(PUNJAB, PR, NOW); // no soilMoistureTrend
+    const { plans } = buildPlans(PUNJAB, PR, NOW);
     for (const p of plans) {
       expect(p.reasons.some((x) => x.code === "soilMoisture")).toBe(false);
     }
@@ -521,6 +502,6 @@ describe("buildPlans — distinct plans with reason chains", () => {
       expect(p.why.length).toBeGreaterThan(0);
     }
     const keys = plans.map((p) => key(p.slots));
-    expect(new Set(keys).size).toBe(keys.length); // all distinct
+    expect(new Set(keys).size).toBe(keys.length);
   });
 });

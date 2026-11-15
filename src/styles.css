@@ -1,13 +1,6 @@
-/* ===================================================================
-   Kisht — dark theme
-   All colour/shape/typography decisions live in the tokens below.
-   Components only reference var(--…); nothing hard-codes a colour.
-   =================================================================== */
-
 :root {
   color-scheme: dark;
 
-  /* ---- Night satellite palette ---- */
   --bg: #0b1b2b;
   --surface: #12283d;
   --raised: #183250;
@@ -26,10 +19,6 @@
   --warning: #f2b84b;
   --danger: #f0785a;
 
-  /* Frosted-glass controls (segmented toggles + floating map controls).
-     The spec's 0.55 opacity fails WCAG 4.5:1 for #9DB4C8 text over bright/white
-     satellite imagery; 0.82 is the "slightly darker glass" that clears it
-     (inactive 4.6:1, active lime 5.1:1 over pure white) while staying frosted. */
   --glass-bg: rgba(11, 27, 43, 0.82);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-hover: rgba(255, 255, 255, 0.06);
@@ -38,16 +27,13 @@
   --seg-active-fg: #c6f05a;
   --seg-active-border: rgba(198, 240, 90, 0.45);
 
-  /* ---- Legacy aliases: existing rules reference these names; map them onto
-     the Night-satellite tokens so the whole UI recolours from here. ---- */
   --card: var(--surface);
   --surface-2: var(--raised);
   --accent: var(--primary);
   --accent-ink: var(--primary-ink);
-  --good: #9be870; /* positive / "better" */
-  --problem: var(--danger); /* worse / warning */
+  --good: #9be870;
+  --problem: var(--danger);
 
-  /* Crop plaques (background / text) — tuned for the blue night surfaces */
   --crop-water-bg: #10303f;
   --crop-water-fg: #7fd0ec;
   --crop-legume-bg: #23361a;
@@ -61,9 +47,6 @@
 
   --font-head: "Inter", system-ui, -apple-system, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  /* Inter everywhere (tabular numerals handle alignment). The only true
-     monospace is the .coord class below. Legacy rules that reference
-     var(--font-mono) therefore render in Inter — no monospace UI. */
   --font-mono: "Inter", system-ui, -apple-system, sans-serif;
 }
 
@@ -95,13 +78,11 @@ h3 {
   margin: 0;
 }
 
-/* Numbers stay in Inter (tabular figures), not monospace. */
 .mono {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" 1;
 }
 
-/* The one place real monospace is allowed: tiny coordinate readouts. */
 .coord {
   font-family: ui-monospace, "SF Mono", "Roboto Mono", monospace;
   font-variant-numeric: tabular-nums;
@@ -124,7 +105,6 @@ a {
   padding: 20px 16px 64px;
 }
 
-/* ---------- Header ---------- */
 .header {
   display: flex;
   align-items: center;
@@ -160,7 +140,6 @@ a {
   color: var(--primary);
 }
 
-/* Stepper — numbered circles, check when done, connector line between */
 .steps-nav {
   min-width: 0;
 }
@@ -249,7 +228,6 @@ a {
   gap: 10px;
 }
 
-/* Language dropdown */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -262,7 +240,6 @@ a {
   border: 0;
 }
 
-/* Language dropdown: shows the short code, menu lists full names */
 .lang-dd {
   position: relative;
 }
@@ -327,7 +304,6 @@ a {
   font-weight: 700;
 }
 
-/* ---------- Generic card ---------- */
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -335,7 +311,6 @@ a {
   padding: 20px;
 }
 
-/* ---------- Screen header ---------- */
 .screen-head {
   margin-bottom: 22px;
 }
@@ -352,7 +327,6 @@ a {
   font-family: var(--font-body);
 }
 
-/* ---------- Buttons ---------- */
 .btn {
   font-family: var(--font-body);
   font-weight: 600;
@@ -402,7 +376,6 @@ a {
   padding: 13px 20px;
 }
 
-/* Secondary / outline button */
 .btn-ghost {
   background: var(--surface-2);
   border-color: var(--border);
@@ -438,7 +411,6 @@ a {
   gap: 8px;
 }
 
-/* ---------- Loading / error states ---------- */
 .state {
   text-align: center;
   padding: 48px 20px;
@@ -471,7 +443,6 @@ a {
   }
 }
 
-/* ---------- Field screen layout ---------- */
 .field-layout {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
@@ -522,7 +493,6 @@ a {
   font-size: 13px;
 }
 
-/* NASA/ISRIC datasets preview (shown before a field is picked) */
 .dataset-list {
   list-style: none;
   margin: 10px 0 0;
@@ -561,23 +531,18 @@ a {
   border-top: 1px dashed var(--border);
 }
 
-/* ---------- Map ---------- */
 .map-wrap {
   position: relative;
   border-radius: var(--radius);
   overflow: hidden;
-  /* Force the WebGL canvas to clip to the rounded corners (it otherwise bleeds
-     over the top edge / corners, especially in Safari). */
   isolation: isolate;
   transform: translateZ(0);
 }
-/* Safari fallback: a mask clips descendant canvases to the rounded box. */
 @supports (-webkit-mask-image: none) {
   .map-wrap {
     -webkit-mask-image: -webkit-radial-gradient(white, white);
   }
 }
-/* The 1px border is drawn ABOVE the map so nothing can cover it. */
 .map-wrap::after {
   content: "";
   position: absolute;
@@ -594,8 +559,6 @@ a {
   background: var(--surface-2);
 }
 
-/* "Map" layer: plain OSM, only gently dimmed so roads, villages and fields
-   stay readable on the dark UI. No invert. Satellite imagery is untouched. */
 .map-soft-tiles .leaflet-tile {
   filter: brightness(0.8) saturate(0.75);
 }
@@ -605,7 +568,6 @@ a {
   background: var(--surface-2);
 }
 
-/* Keep Leaflet's attribution legible on the dark UI */
 .leaflet-control-attribution {
   background: rgba(13, 19, 17, 0.75) !important;
   color: var(--muted) !important;
@@ -627,7 +589,6 @@ a {
   background: var(--glass-hover) !important;
 }
 
-/* ---------- MapLibre globe (night theme) ---------- */
 .globe-canvas {
   cursor: grab;
 }
@@ -635,13 +596,11 @@ a {
   cursor: grabbing;
 }
 
-/* The globe sits on the page background, so space/atmosphere blends in. */
 .maplibregl-map {
   font-family: var(--font-body);
   background: var(--bg);
 }
 
-/* Zoom control (bottom-right) — frosted glass */
 .maplibregl-ctrl-group {
   background: var(--glass-bg) !important;
   -webkit-backdrop-filter: blur(12px);
@@ -663,13 +622,11 @@ a {
 .maplibregl-ctrl-group button:hover {
   background: var(--glass-hover) !important;
 }
-/* The +/- glyphs are dark SVGs; invert them for the dark UI. */
 .maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
 .maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon {
   filter: invert(0.9);
 }
 
-/* Attribution */
 .maplibregl-ctrl-attrib {
   background: rgba(13, 19, 17, 0.75) !important;
   color: var(--muted) !important;
@@ -681,14 +638,12 @@ a {
   filter: invert(0.9);
 }
 
-/* Globe shell: map panel + continent row stacked */
 .globe-shell {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-/* Continent fly-to — one row UNDER the map panel (never over the globe) */
 .continent-row {
   display: flex;
   flex-wrap: wrap;
@@ -714,7 +669,6 @@ a {
   color: var(--primary);
 }
 
-/* "Zoom in to pick your field" hint */
 .map-hint {
   position: absolute;
   bottom: 54px;
@@ -733,8 +687,6 @@ a {
   pointer-events: none;
 }
 
-/* Top overlay bar: search (flexes to fill) + the Map/Satellite toggle.
-   On narrow screens the toggle wraps below the search. */
 .map-topbar {
   position: absolute;
   top: 10px;
@@ -753,7 +705,6 @@ a {
   max-width: 460px;
 }
 
-/* Layer toggle */
 .map-toggle {
   flex: 0 0 auto;
   margin-left: auto;
@@ -796,7 +747,6 @@ a {
   box-shadow: inset 0 0 0 1px var(--seg-active-border);
 }
 
-/* Bottom-left controls: coordinates + "use my location" */
 .map-bottomleft {
   position: absolute;
   left: 10px;
@@ -806,7 +756,7 @@ a {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  max-width: calc(100% - 92px); /* leave room for the bottom-right zoom control */
+  max-width: calc(100% - 92px);
 }
 
 .map-coords {
@@ -839,7 +789,6 @@ a {
   filter: none;
 }
 
-/* Message shown inside the search overlay sits on its own readable chip */
 .map-overlay-msg {
   margin-top: 8px;
   background: var(--card);
@@ -849,7 +798,6 @@ a {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
 }
 
-/* Search input + results */
 .search-row {
   display: flex;
   gap: 8px;
@@ -933,7 +881,6 @@ a {
   border-color: var(--border);
 }
 
-/* ---------- Stat cards ---------- */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -984,7 +931,6 @@ a {
   letter-spacing: 0.04em;
 }
 
-/* ---------- Charts ---------- */
 .chart-card {
   margin-bottom: 24px;
 }
@@ -1005,7 +951,6 @@ a {
   height: 300px;
 }
 
-/* ---------- Insight ---------- */
 .insight h2 {
   font-size: 18px;
   margin-bottom: 12px;
@@ -1020,7 +965,6 @@ a {
   margin-bottom: 0;
 }
 
-/* ---------- Cached-data badge ---------- */
 .cached-badge {
   display: inline-block;
   margin-left: 8px;
@@ -1037,7 +981,6 @@ a {
   white-space: nowrap;
 }
 
-/* ---------- Soil card ---------- */
 .soil-grid {
   margin: 0;
   display: flex;
@@ -1109,7 +1052,6 @@ a {
   border: 1px solid rgba(242, 184, 75, 0.35);
   color: var(--text);
   font-size: 12px;
-  /* One compact line; full text in the title tooltip. */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1125,7 +1067,6 @@ a {
   margin: 8px 0;
 }
 
-/* ---------- Climate bottom (insight + soil) ---------- */
 .climate-bottom {
   display: grid;
   grid-template-columns: 1.4fr 1fr;
@@ -1133,13 +1074,11 @@ a {
   align-items: start;
 }
 
-/* ---------- Section heading inside a card ---------- */
 .block-h {
   font-size: 18px;
   margin-bottom: 12px;
 }
 
-/* ---------- Priorities: sliders ---------- */
 .prio-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1179,7 +1118,6 @@ a {
   margin: 6px 0 0;
 }
 
-/* ---------- Priorities: current rotation selects ---------- */
 .current-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1217,7 +1155,6 @@ select:focus {
   outline-offset: 1px;
 }
 
-/* ---------- Priorities: crop selection ---------- */
 .crop-select {
   margin-top: 16px;
 }
@@ -1293,7 +1230,6 @@ select:focus {
   margin-top: 14px;
 }
 
-/* ---------- Segmented control (What if? / plan picker) ---------- */
 .seg {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1332,11 +1268,9 @@ select:focus {
 .seg-btn.active {
   background: var(--seg-active-bg);
   color: var(--seg-active-fg);
-  /* inset outline so the lime ring shows on all four sides */
   box-shadow: inset 0 0 0 1px var(--seg-active-border);
 }
 
-/* ---------- Rotation: GRACE trend plaque ---------- */
 .gw-plaque {
   display: flex;
   align-items: center;
@@ -1367,7 +1301,6 @@ select:focus {
   color: var(--text);
 }
 
-/* ---------- Rotation: what-if ---------- */
 .whatif {
   margin-bottom: 20px;
 }
@@ -1376,7 +1309,6 @@ select:focus {
   margin-bottom: 12px;
 }
 
-/* ---------- Rotation: Now + featured pair ---------- */
 .rotation-feature {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1404,12 +1336,10 @@ select:focus {
   flex: 1;
 }
 
-/* The "Now" comparison card reads as the baseline — dashed border */
 .feature-col.is-now .plan-card {
   border-style: dashed;
 }
 
-/* ---------- Rotation: other plans as buttons ---------- */
 .plan-switch {
   display: flex;
   flex-wrap: wrap;
@@ -1459,7 +1389,6 @@ select:focus {
   font-style: italic;
 }
 
-/* ---------- Plan card ---------- */
 .plan-card {
   display: flex;
   flex-direction: column;
@@ -1485,7 +1414,6 @@ select:focus {
   font-size: 16px;
 }
 
-/* Rotation table: 4 years × 2 seasons */
 .years-row {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -1520,7 +1448,6 @@ select:focus {
   flex: none;
 }
 
-/* Crop plaques — colour by category (see src/lib/cropLook.ts) */
 .year-crop {
   font-weight: 700;
   font-size: 13px;
@@ -1556,7 +1483,6 @@ select:focus {
   padding-left: 0;
 }
 
-/* Plan scores */
 .plan-scores {
   display: flex;
   flex-direction: column;
@@ -1589,7 +1515,6 @@ select:focus {
   background: var(--water);
 }
 
-/* Worded score levels */
 .score-fill.tone-low {
   background: var(--danger);
 }
@@ -1643,7 +1568,6 @@ select:focus {
   font-size: 16px;
 }
 
-/* ---------- Rotation: excluded crops ---------- */
 .excluded-card {
   margin-top: 20px;
 }
@@ -1664,7 +1588,6 @@ select:focus {
   cursor: help;
 }
 
-/* ---------- Why screen ---------- */
 .why-pick {
   display: flex;
   align-items: center;
@@ -1734,7 +1657,6 @@ select:focus {
   font-size: 12px;
 }
 
-/* ---------- Why: limits + sources ---------- */
 .limits-card {
   margin-top: 20px;
   border-left: 3px solid var(--problem);
@@ -1794,12 +1716,10 @@ select:focus {
   color: var(--muted);
 }
 
-/* ---------- Groundwater card (Climate screen) ---------- */
 .climate-water {
   margin-top: 20px;
 }
 
-/* Water + soil-moisture + terrain, flowing responsively */
 .climate-water-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -1847,7 +1767,6 @@ select:focus {
   margin: 6px 0 0;
 }
 
-/* ---------- Plan screen: compact controls (details) ---------- */
 .plan-controls {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1874,7 +1793,6 @@ select:focus {
   margin-bottom: 0;
 }
 
-/* Twisty cue so it reads as expand/collapse */
 .plan-controls-summary::after,
 .why-collapse-summary::after {
   content: "▸";
@@ -1923,7 +1841,6 @@ select:focus {
   grid-template-columns: 1fr;
 }
 
-/* ---------- Plan screen: collapsible "Why this plan" ---------- */
 .why-collapse {
   margin-top: 20px;
 }
@@ -1969,7 +1886,6 @@ select:focus {
   margin-top: 24px;
 }
 
-/* ---------- NASA data used block (plan footer) ---------- */
 .nasa-data-block {
   margin-top: 24px;
   border-left: 3px solid var(--water);
@@ -1994,7 +1910,6 @@ select:focus {
   font-style: italic;
 }
 
-/* ---------- Screen 2: "In short" banner ---------- */
 .inshort {
   display: flex;
   gap: 14px;
@@ -2029,7 +1944,6 @@ select:focus {
   margin-bottom: 0;
 }
 
-/* ---------- Screen 2: plain-language condition cards ---------- */
 .condition-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -2084,7 +1998,6 @@ select:focus {
   padding-top: 14px;
 }
 
-/* Collapsed charts */
 .measurements {
   margin-bottom: 20px;
 }
@@ -2098,7 +2011,6 @@ select:focus {
   margin-bottom: 0;
 }
 
-/* ---------- Screen 3: what-matters segmented + Kisht column ---------- */
 .matters {
   margin-bottom: 16px;
 }
@@ -2110,7 +2022,6 @@ select:focus {
   color: var(--primary);
 }
 
-/* ---------- Screen 1: examples-on-focus dropdown + field hint ---------- */
 .examples-dd-label {
   font-family: var(--font-body);
   font-weight: 700;
@@ -2125,7 +2036,6 @@ select:focus {
   margin-top: 10px;
 }
 
-/* ---------- Screen 1: NASA data status block ---------- */
 .nasa-status.is-idle {
   opacity: 0.55;
 }
@@ -2208,7 +2118,6 @@ select:focus {
   color: var(--muted);
   font-style: italic;
 }
-/* ---------- Screen 1: no page scroll on desktop ---------- */
 @media (min-width: 861px) {
   .app--fixed {
     height: 100vh;
@@ -2236,7 +2145,6 @@ select:focus {
   .app--fixed .field-layout {
     flex: 1 1 auto;
     min-height: 0;
-    /* Fill the row to the viewport height and stretch both columns to it. */
     grid-template-rows: 1fr;
     align-items: stretch;
   }
@@ -2263,13 +2171,11 @@ select:focus {
   .app--fixed .field-panel-col {
     min-height: 0;
   }
-  /* The field card always sizes to its content — never clip the pH row. */
   .app--fixed .field-card,
   .app--fixed .field-hint {
     flex: 0 0 auto;
     overflow: visible;
   }
-  /* The NASA data block shrinks/scrolls instead if the column gets tight. */
   .app--fixed .nasa-status {
     flex: 0 1 auto;
     min-height: 0;
@@ -2281,7 +2187,6 @@ select:focus {
   }
 }
 
-/* ---------- Screen 1: sticky primary button on phones ---------- */
 @media (max-width: 860px) {
   .field-continue {
     position: sticky;
@@ -2291,7 +2196,6 @@ select:focus {
   }
 }
 
-/* ---------- Responsive: tablet ---------- */
 @media (max-width: 860px) {
   .plan-controls-split {
     grid-template-columns: 1fr;
@@ -2310,7 +2214,6 @@ select:focus {
   }
 }
 
-/* ---------- Responsive: phone ---------- */
 @media (max-width: 560px) {
   .app {
     padding: 16px 12px 56px;
@@ -2327,7 +2230,6 @@ select:focus {
     padding: 6px 4px;
     font-size: 12px;
   }
-  /* Keep the three numbered circles; drop the words to save width */
   .step-text {
     display: none;
   }

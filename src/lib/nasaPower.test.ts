@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parsePowerResponse } from "./nasaPower";
 
-/** Minimal response resembling NASA POWER's shape. */
 function response(params: Record<string, Record<string, number>>) {
   return { properties: { parameter: params } };
 }
 
 describe("parsePowerResponse", () => {
   it("converts precipitation from mm/day to mm for the calendar month", () => {
-    // January has 31 days, so 2 mm/day -> 62 mm.
     const json = response({
       T2M: { "199501": 5 },
       T2M_MAX: { "199501": 10 },

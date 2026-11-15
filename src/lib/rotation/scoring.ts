@@ -11,35 +11,22 @@ import type {
 const clamp = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-/** The crops actually planted in a plan (fallow slots dropped). */
 function planted(slots: PlanSlot[]): Crop[] {
   return slots.map((s) => s.crop).filter((c): c is Crop => c != null);
 }
 
-/**
- * The mean daily-max temperature a crop faces in its own growing season —
- * each season's own (scenario-adjusted) value, derived by latitude upstream.
- */
 export function effectiveGrowingTmax(crop: Crop, site: SiteConditions): number {
   return crop.season === "summer" ? site.summerTmaxC : site.winterTmaxC;
 }
 
-/** Rainfall available to a crop, counted in ITS growing season. */
 export function seasonRainForCrop(crop: Crop, site: SiteConditions): number {
   return crop.season === "summer" ? site.summerRainMm : site.winterRainMm;
 }
 
-/** Unmet water demand (mm) for one crop: seasonal need minus that season's rain. */
 export function waterDeficitMm(crop: Crop, site: SiteConditions): number {
   return Math.max(0, waterNeedMid(crop) - seasonRainForCrop(crop, site));
 }
 
-/**
- * 0–10: lower irrigation deficit = higher score. Blends the plan-wide AVERAGE
- * deficit with the SINGLE thirstiest crop (WATER_PEAK_WEIGHT) so one hungry crop
- * can't hide behind dry ones; worse again where groundwater is falling.
- */
-/** Deficit multiplier for a falling aquifer, scaled by the GRACE depletion rate. */
 export function fallingPenalty(site: SiteConditions): number {
   if (site.groundwater !== "falling") return 1;
   if (typeof site.groundwaterTrendCm === "number") {
@@ -50,7 +37,7 @@ export function fallingPenalty(site: SiteConditions): number {
 
 export function waterScore(slots: PlanSlot[], site: SiteConditions): number {
   const crops = planted(slots);
-  if (crops.length === 0) return 10; // nothing planted, nothing to irrigate
+  if (crops.length === 0) return 10;
   const deficits = crops.map((c) => waterDeficitMm(c, site));
   const avg = mean(deficits);
   const peak = Math.max(...deficits);
@@ -59,17 +46,8 @@ export function waterScore(slots: PlanSlot[], site: SiteConditions): number {
   return clamp(10 - effective / C.WATER_DEFICIT_PER_POINT_MM, 0, 10);
 }
 
-/** The crops planted in each year's summer then winter slot (null = fallow). */
 const isRowCrop = (c: Crop) => C.EROSION_ROW_CROP_IDS.includes(c.id);
 
-/**
- * Erosion adjustment (points added to the soil score) for steep land only.
- * On slopes above EROSION_SLOPE_PCT (from SRTM / AWS Terrain Tiles):
- *  + a perennial stand, and legumes, earn a bonus (cover + roots hold soil)
- *  − row crops (cotton, maize) grown two years running take a penalty (back-to-
- *    back bare cultivation is what erodes a hillside)
- * Returns 0 when we have no slope, or the land is flat enough not to matter.
- */
 export function erosionAdjustment(slots: PlanSlot[], site: SiteConditions): number {
   if (typeof site.slopePct !== "number" || site.slopePct <= C.EROSION_SLOPE_PCT) return 0;
   const crops = planted(slots);
@@ -80,9 +58,6 @@ export function erosionAdjustment(slots: PlanSlot[], site: SiteConditions): numb
   const legumeSlots = crops.filter((c) => c.fixesNitrogen).length;
   adj += Math.min(legumeSlots, C.EROSION_MAX_LEGUME_SLOTS) * C.EROSION_PER_LEGUME_SLOT;
 
-  // Penalty for each pair of consecutive years that both carry a row crop.
-  // Slots are ordered [y0 summer, y0 winter, y1 summer, …]; a year "has a row
-  // crop" if either of its two slots is cotton/maize.
   const yearHasRow: boolean[] = [];
   for (let i = 0; i < slots.length; i += 2) {
     const summer = slots[i]?.crop;
@@ -95,13 +70,6 @@ export function erosionAdjustment(slots: PlanSlot[], site: SiteConditions): numb
   return adj;
 }
 
-/**
- * 0–10: nitrogen fixers, plant-family diversity and a perennial build soil.
- * Scored across all planted slots so a two-crop cereal monoculture (rice–wheat)
- * sits near the base and a diverse, legume-rich plan approaches 10. On steep
- * land (SRTM slope) an erosion adjustment nudges the score up for cover crops
- * and down for back-to-back row crops.
- */
 export function soilScore(slots: PlanSlot[], site?: SiteConditions): number {
   const crops = planted(slots);
   if (crops.length === 0) return 0;
@@ -117,13 +85,11 @@ export function soilScore(slots: PlanSlot[], site?: SiteConditions): number {
   return clamp(score, 0, 10);
 }
 
-/** 0–10: average crop value across ALL slots, so fallow slots cost income. */
 export function incomeScore(slots: PlanSlot[]): number {
   const total = slots.reduce((s, sl) => s + (sl.crop ? sl.crop.incomeIndex : 0), 0);
   return clamp((total / slots.length) * C.INCOME_SCALE, 0, 10);
 }
 
-/** 0–10 reliability for a single crop under the given (adjusted) conditions. */
 export function cropReliability(crop: Crop, site: SiteConditions): number {
   const headroom = crop.maxTempC - effectiveGrowingTmax(crop, site);
   const heat = clamp(
@@ -142,24 +108,18 @@ export function cropReliability(crop: Crop, site: SiteConditions): number {
     10,
   );
   let rel = 0.5 * heat + 0.5 * drought;
-  // Salinity risk is a soft penalty, not an exclusion: pH is not an EC reading,
-  // so we dock reliability for salt-sensitive crops on saline-risk (very
-  // alkaline or very acidic) soil rather than ruling them out.
   if (
     crop.salinityTolerance === 1 &&
     (site.ph >= C.STRONG_ALKALINE_PH || site.ph <= C.STRONG_ACIDIC_PH)
   ) {
     rel -= C.SALINITY_RELIABILITY_PENALTY;
   }
-  // Root-zone soil moisture falling (GWETROOT): reward drought-tolerant crops,
-  // which hold up better as the soil dries year-on-year.
   if (site.soilMoistureTrend === "falling") {
     rel += (crop.droughtTolerance - 1) * C.SOIL_MOISTURE_DROUGHT_BONUS;
   }
   return clamp(rel, 0, 10);
 }
 
-/** 0–10: how comfortably the planted crops cope with heat and dryness. */
 export function reliabilityScore(slots: PlanSlot[], site: SiteConditions): number {
   const crops = planted(slots);
   if (crops.length === 0) return 0;
@@ -175,7 +135,6 @@ export function scoreSlots(slots: PlanSlot[], site: SiteConditions): Scores {
   };
 }
 
-/** Weighted match (0–100) of a plan's scores against farmer priorities. */
 export function matchPct(scores: Scores, pr: Priorities): number {
   const wSum = pr.water + pr.soil + pr.income + pr.reliability;
   if (wSum === 0) {

@@ -36,7 +36,6 @@ describe("buildMapStyle", () => {
     expect(FADE_LOW).toBeLessThan(FADE_HIGH);
     const gibs = style.layers.find((l) => l.id === "gibs");
     const esri = style.layers.find((l) => l.id === "esri");
-    // Blue Marble fades 1→0, Esri fades 0→1 across [FADE_LOW, FADE_HIGH].
     expect(JSON.stringify(gibs?.paint)).toContain(String(FADE_LOW));
     expect(JSON.stringify(esri?.paint)).toContain(String(FADE_HIGH));
   });

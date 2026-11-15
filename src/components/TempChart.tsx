@@ -11,9 +11,7 @@ import { useI18n } from "../i18n";
 
 export interface TempPoint {
   year: number;
-  /** Mean summer temperature for the year, °C. */
   temp: number;
-  /** Fitted trend value for the year, °C. */
   trend: number;
 }
 

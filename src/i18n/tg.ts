@@ -1,4 +1,3 @@
-// Tajik (Тоҷикӣ). NEEDS REVIEW BY A NATIVE SPEAKER — see README.
 import type { Dict } from "./en";
 
 const sgn = (n: number) => (n >= 0 ? "+" : "−") + Math.abs(n);

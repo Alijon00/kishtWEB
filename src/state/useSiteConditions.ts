@@ -12,7 +12,6 @@ import { useTerrain, type UseTerrainResult } from "./useTerrain";
 export type SiteStatus = "idle" | "loading" | "ready" | "error";
 
 export interface SiteBundle {
-  /** Driven by climate (the one required input); soil/GRACE enrich it as they arrive. */
   status: SiteStatus;
   site: SiteConditions | null;
   records: MonthlyRecord[] | null;
@@ -21,18 +20,11 @@ export interface SiteBundle {
   soilStatus: SoilStatus;
   grace: UseGroundwaterResult;
   terrain: UseTerrainResult;
-  /** True when any of climate/soil/GRACE/terrain came from the offline demo cache. */
   cached: boolean;
   climateError: string;
   reloadClimate: () => void;
 }
 
-/**
- * One hook that assembles the engine's SiteConditions from the three data
- * sources. Climate is required; soil and GRACE are optional — the site updates
- * as each resolves, so plans refine rather than block (soil may be "unavailable"
- * on ocean/ice and never arrive, which must not stall the whole screen).
- */
 export function useSiteConditions(
   lat: number | null,
   lon: number | null,
