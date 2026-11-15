@@ -16,10 +16,10 @@ const PR: Priorities = { water: 5, soil: 5, income: 5, reliability: 5 };
 const PLACES = [
   { id: "vakhsh", name: "VAKHSH valley, Tajikistan", lat: 37.7, current: { summer: "cotton", winter: "wheat" } as CurrentRotation,
     rep: { seasonKind: "temperate", summerTempC: 29, winterTempC: 8, summerTmaxC: 37, winterTmaxC: 16, annualRainMm: 300, summerRainMm: 60, winterRainMm: 180, rainChangePct: -8, tempChangeC: 1.3, socPct: 0.6, socLevel: "low", ph: 8.0, texture: "Loam", groundwater: "stable", groundwaterTrendCm: -0.7 } as SiteConditions },
-  { id: "punjab", name: "PUNJAB, India", lat: 30.9, current: { summer: "rice", winter: "wheat" } as CurrentRotation,
-    rep: { seasonKind: "temperate", summerTempC: 32, winterTempC: 17, summerTmaxC: 40, winterTmaxC: 25, annualRainMm: 650, summerRainMm: 560, winterRainMm: 90, rainChangePct: -5, tempChangeC: 1.1, socPct: 0.45, socLevel: "low", ph: 7.8, texture: "Loam", groundwater: "falling", groundwaterTrendCm: -4.2 } as SiteConditions },
-  { id: "nakuru", name: "NAKURU, Kenya", lat: -0.3, current: { summer: "maize", winter: null } as CurrentRotation,
-    rep: { seasonKind: "tropical", summerTempC: 16, winterTempC: 15, summerTmaxC: 24, winterTmaxC: 23, annualRainMm: 1100, summerRainMm: 630, winterRainMm: 490, rainChangePct: 2, tempChangeC: 0.8, socPct: 2.8, socLevel: "good", ph: 6.2, texture: "Clay loam", groundwater: "rising", groundwaterTrendCm: 2.8 } as SiteConditions },
+  { id: "sughd", name: "SUGHD (Fergana valley), Tajikistan", lat: 40.2, current: { summer: "cotton", winter: "wheat" } as CurrentRotation,
+    rep: { seasonKind: "temperate", summerTempC: 28, winterTempC: 3, summerTmaxC: 36, winterTmaxC: 9, annualRainMm: 160, summerRainMm: 20, winterRainMm: 100, rainChangePct: -8, tempChangeC: 1.3, socPct: 0.84, socLevel: "low", ph: 7.8, texture: "Clay loam", groundwater: "stable", groundwaterTrendCm: -1.0 } as SiteConditions },
+  { id: "hissar", name: "HISSAR valley, Tajikistan", lat: 38.55, current: { summer: "cotton", winter: "wheat" } as CurrentRotation,
+    rep: { seasonKind: "temperate", summerTempC: 27, winterTempC: 4, summerTmaxC: 35, winterTmaxC: 10, annualRainMm: 550, summerRainMm: 30, winterRainMm: 350, rainChangePct: -5, tempChangeC: 1.2, socPct: 1.44, socLevel: "medium", ph: 7.45, texture: "Clay loam", groundwater: "stable", groundwaterTrendCm: -0.8 } as SiteConditions },
 ];
 
 const SCENARIOS: { label: string; s: Scenario }[] = [

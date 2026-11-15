@@ -143,7 +143,7 @@ describe("filterCrops — hard vs soft", () => {
     expect(allowed.some((c) => c.id === "chickpea")).toBe(true);
   });
 
-  it("does NOT exclude maize in a cool tropical highland (Nakuru)", () => {
+  it("does NOT exclude maize in a cool tropical highland", () => {
     const { excluded, allowed } = filterCrops(COOL_HIGHLAND);
     expect(excluded.some((e) => e.crop.id === "maize")).toBe(false);
     expect(allowed.some((c) => c.id === "maize")).toBe(true);

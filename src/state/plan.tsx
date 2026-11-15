@@ -17,8 +17,8 @@ const DEFAULT_SCENARIO: Scenario = { rainDeltaPct: 0, tempDeltaC: 0 };
 
 const CURRENT_PRESETS: Record<string, CurrentRotation> = {
   vakhsh: { summer: "cotton", winter: "wheat" },
-  punjab: { summer: "rice", winter: "wheat" },
-  nakuru: { summer: "maize", winter: null },
+  sughd: { summer: "cotton", winter: "wheat" },
+  hissar: { summer: "cotton", winter: "wheat" },
 };
 
 export function defaultCurrentRotation(

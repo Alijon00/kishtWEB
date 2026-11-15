@@ -69,16 +69,18 @@ python build.py --file data/GRCTellus.JPL.<...>.nc
 
 ## What you'll see
 
-Before writing anything, the script prints the three sanity-check points so we
-can eyeball them **before wiring into the app**:
+Before writing anything, the script prints the sanity-check points so we
+can eyeball them **before wiring into the app** (the three Tajik demo fields,
+plus Punjab as a validation reference against Rodell et al. 2009):
 
 ```
 GRACE total-water-storage trend, 2003-2024 (cm/year):
   negative = drying / water leaving storage
 
-  Vakhsh valley (TJ)             -X.XX cm/yr   (cell 37.75, 68.75)
-  Punjab (IN/PK, ~Ludhiana)      -X.XX cm/yr   (cell 30.75, 75.75)
-  Nakuru (KE)                    +X.XX cm/yr   (cell -0.25, 36.25)
+  Vakhsh valley (TJ)                 -0.7X cm/yr   (cell 37.75, 68.75)
+  Sughd / Fergana valley (TJ)        -0.7X cm/yr   (cell 40.25, 69.25)
+  Hissar valley (TJ)                 -0.7X cm/yr   (cell 38.75, 68.75)
+  Punjab (IN/PK, ~Ludhiana)          -4.XX cm/yr   (cell 30.75, 75.75)  # validation only
 
 Wrote .../public/data/grace_trend.json (NNN KB, ...)
 ```

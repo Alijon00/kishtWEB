@@ -21,7 +21,7 @@ const en = {
     title: "Where is your field?",
     subtitle: "Spin the globe, search a place, or use your location. Zoom in and tap to drop a pin.",
     searchLabel: "Search a place",
-    searchPlaceholder: "e.g. Nakuru, Kenya",
+    searchPlaceholder: "e.g. Khujand, Tajikistan",
     searchBtn: "Search",
     searching: "…",
     noResults: "No places found for that search.",
@@ -62,8 +62,8 @@ const en = {
 
   examples: {
     vakhsh: "Vakhsh valley, Tajikistan",
-    punjab: "Punjab, India",
-    nakuru: "Nakuru, Kenya",
+    sughd: "Sughd, Tajikistan",
+    hissar: "Hissar valley, Tajikistan",
   },
 
   map: {

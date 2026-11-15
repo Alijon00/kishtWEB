@@ -31,8 +31,9 @@ behind every one. Built for the **NASA Space Apps Challenge 2026**.
 
 1. **Where is your field?** — spin a 3D globe (NASA GIBS **Blue Marble** at low zoom, Esri imagery
    up close), jump with the **continent buttons** (Asia / Africa / Europe / Americas / Oceania),
-   search a place, or use your location. Three example fields (Vakhsh valley, Tajikistan · Punjab,
-   India · Nakuru, Kenya) appear when you focus the search. Picking a point fills the **"Your
+   search a place, or use your location. Three example fields — all real Tajik farmland (Vakhsh
+   valley, Khatlon · Sughd / Fergana valley · Hissar valley) — appear when you focus the search.
+   Picking a point fills the **"Your
    field"** card (place, coordinates and SoilGrids soil) and a compact **"NASA data for this
    field"** block that *prefetches* the climate / water / terrain datasets so the next step opens
    instantly.
@@ -104,16 +105,23 @@ We fit a linear trend to the JPL mascon total-water-storage record (2003–2024)
 
 | Field | TWS trend (cm/yr) | Reading |
 | ----- | ----------------- | ------- |
-| **Punjab, India** | **−4.2** | severe depletion |
 | **Vakhsh valley, Tajikistan** | **−0.7** | roughly stable |
-| **Nakuru, Kenya** | **+2.8** | gaining water |
+| **Sughd / Fergana valley, Tajikistan** | **−0.7** | roughly stable |
+| **Hissar valley, Tajikistan** | **−0.7** | roughly stable |
 
-Our Punjab figure matches the published science: Rodell, Velicogna & Famiglietti (2009),
-*"Satellite-based estimates of groundwater depletion in India,"* **Nature** 460, 999–1002
-([doi:10.1038/nature08238](https://doi.org/10.1038/nature08238)) report groundwater loss across
-NW India (Rajasthan, Punjab, Haryana) at **~4 cm/yr** of equivalent water height — the same order
-and sign as our independent estimate. That's why Kisht scores a thirsty rice–wheat rotation on the
-Punjab aquifer so harshly, and why "Now" (rice–wheat) lands far below the proposed plans on water.
+All three Tajik fields read as **roughly stable** — honest, and expected: GRACE-FO mascons are
+~300 km, so these nearby irrigated valleys fall in cells with very similar total-water-storage
+trends. (The app says plainly that GRACE measures *all* water in a ~300 km column, not a well.)
+
+**Validation against published science (Punjab, India — not a UI example).** To check our trend
+fit against a known result, we also ran the same pipeline on NW India. For **Punjab (≈30.9 N,
+75.85 E)** we get a TWS trend of **−4.2 cm/yr** (severe depletion), which matches Rodell,
+Velicogna & Famiglietti (2009), *"Satellite-based estimates of groundwater depletion in India,"*
+**Nature** 460, 999–1002
+([doi:10.1038/nature08238](https://doi.org/10.1038/nature08238)): they report groundwater loss
+across NW India (Rajasthan, Punjab, Haryana) at **~4 cm/yr** of equivalent water height — the same
+order and sign as our independent estimate. That agreement is why we trust the engine's harsh water
+score for a thirsty rice–wheat rotation on a falling aquifer.
 
 ## How the rotation engine works (plain language)
 

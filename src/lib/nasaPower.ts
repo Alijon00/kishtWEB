@@ -6,8 +6,8 @@ const DAYS_IN_MONTH = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 export const SITES: Site[] = [
   { id: "vakhsh", name: "Vakhsh valley, Tajikistan", lat: 37.7, lon: 68.8 },
-  { id: "punjab", name: "Punjab, India", lat: 30.80, lon: 75.65 },
-  { id: "nakuru", name: "Kenya, Nakuru", lat: -0.3, lon: 36.07 },
+  { id: "sughd", name: "Sughd, Tajikistan", lat: 40.2, lon: 69.2 },
+  { id: "hissar", name: "Hissar valley, Tajikistan", lat: 38.55, lon: 68.65 },
 ];
 
 const CURRENT_YEAR = new Date().getFullYear();

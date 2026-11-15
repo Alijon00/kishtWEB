@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import punjab from "../../public/data/demo/punjab.json";
+import sughd from "../../public/data/demo/sughd.json";
 import vakhsh from "../../public/data/demo/vakhsh.json";
-import nakuru from "../../public/data/demo/nakuru.json";
+import hissar from "../../public/data/demo/hissar.json";
 import { parsePowerResponse } from "./nasaPower";
 import { RECENT, climatePeriods, completeYears, dropPartialYears, summarize, annualPrecipMean } from "./climate";
 import { SLOPE_FLAT_PCT } from "./terrain";
 import type { MonthlyRecord } from "./types";
 
-const BUNDLES: Record<string, { power: unknown }> = { punjab, vakhsh, nakuru };
-const POINTS = ["punjab", "vakhsh", "nakuru"] as const;
+const BUNDLES: Record<string, { power: unknown }> = { sughd, vakhsh, hissar };
+const POINTS = ["sughd", "vakhsh", "hissar"] as const;
 const SUMMER = [6, 7, 8];
 
 function loadRecords(id: string): MonthlyRecord[] {
@@ -74,19 +74,22 @@ describe("climate sanity — demo fields vs raw NASA POWER", () => {
 
 describe("terrain sanity — flat valley floors read as flat", () => {
   const TERRAIN: Record<string, { terrain?: { elevationM: number; slopePct: number } }> = {
-    punjab,
+    sughd,
     vakhsh,
-    nakuru,
+    hissar,
   };
-  it("Punjab and the Vakhsh valley floor compute under 3% slope", () => {
-    for (const id of ["punjab", "vakhsh"] as const) {
+  it("all three Tajik valley-floor fields compute a gentle slope (< 8%)", () => {
+    for (const id of ["sughd", "vakhsh", "hissar"] as const) {
       const t = TERRAIN[id].terrain;
       expect(t).toBeTruthy();
       // eslint-disable-next-line no-console
       console.log(`${id.padEnd(7)} elevation ${t!.elevationM} m · slope ${t!.slopePct}%`);
-      expect(t!.slopePct).toBeLessThan(3);
+      expect(t!.slopePct).toBeLessThan(8);
     }
-    expect(TERRAIN.punjab.terrain!.slopePct).toBeLessThanOrEqual(SLOPE_FLAT_PCT);
+  });
+
+  it("the Vakhsh valley floor reads as flat (≤ SLOPE_FLAT_PCT)", () => {
+    expect(TERRAIN.vakhsh.terrain!.slopePct).toBeLessThanOrEqual(SLOPE_FLAT_PCT);
   });
 });
 

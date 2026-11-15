@@ -13,8 +13,8 @@ export interface ExamplePoint {
 
 export const DEMO_POINTS: ExamplePoint[] = [
   { id: "vakhsh", lat: 37.7, lon: 68.8 },
-  { id: "punjab", lat: 30.80, lon: 75.65 },
-  { id: "nakuru", lat: -0.3, lon: 36.07 },
+  { id: "sughd", lat: 40.2, lon: 69.2 },
+  { id: "hissar", lat: 38.55, lon: 68.65 },
 ];
 
 const MATCH_TOLERANCE_DEG = 0.05;

@@ -46,9 +46,11 @@ REGIONS = {
 }
 
 SAMPLE_POINTS = {
-    "Vakhsh valley (TJ)": (37.9, 68.8),
+    "Vakhsh valley (TJ)": (37.7, 68.8),
+    "Sughd / Fergana valley (TJ)": (40.2, 69.2),
+    "Hissar valley (TJ)": (38.55, 68.65),
+    # Validation reference only (not a UI example): matches Rodell et al. 2009.
     "Punjab (IN/PK, ~Ludhiana)": (30.9, 75.85),
-    "Nakuru (KE)": (-0.30, 36.07),
 }
 
 SIZE_BUDGET_BYTES = 2 * 1024 * 1024

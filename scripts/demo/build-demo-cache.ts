@@ -3,7 +3,7 @@ import { fileURLToPath } from "node:url";
 import { inflateSync } from "node:zlib";
 
 import { powerUrl } from "../../src/lib/nasaPower";
-import { soilGridsUrl } from "../../src/lib/soilgrids";
+import { parseSoilGrids, soilGridsUrl } from "../../src/lib/soilgrids";
 import { lookupGrace, type GraceGrid, type GraceResult } from "../../src/lib/grace";
 import {
   groundResolutionM,
@@ -16,8 +16,8 @@ import {
 
 const POINTS = [
   { id: "vakhsh", lat: 37.7, lon: 68.8 },
-  { id: "punjab", lat: 30.80, lon: 75.65 },
-  { id: "nakuru", lat: -0.3, lon: 36.07 },
+  { id: "sughd", lat: 40.2, lon: 69.2 },
+  { id: "hissar", lat: 38.55, lon: 68.65 },
 ];
 
 const ROOT = fileURLToPath(new URL("../../", import.meta.url));
@@ -28,6 +28,44 @@ async function getJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   return res.json();
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+// SoilGrids (rest.isric.org) is often slow and flaky — it will time out on one
+// call and answer the next. We retry hard, and we only accept a response that
+// parses into a COMPLETE soil profile. We never write a null/fallback soil.
+async function fetchJsonWithTimeout(url: string, timeoutMs: number): Promise<unknown> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: ctl.signal });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function getSoilOrThrow(lat: number, lon: number): Promise<unknown> {
+  const url = soilGridsUrl(lat, lon);
+  const attempts = 8;
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const json = await fetchJsonWithTimeout(url, 45_000);
+      const profile = parseSoilGrids(json as Parameters<typeof parseSoilGrids>[0]);
+      if (profile) return json; // store the RAW response; the app re-parses it
+      lastErr = new Error("SoilGrids returned no usable profile (open water / no-data pixel?)");
+    } catch (err) {
+      lastErr = err;
+    }
+    process.stdout.write(`soil retry ${i + 1}/${attempts}… `);
+    await sleep(3000);
+  }
+  throw new Error(
+    `SoilGrids failed after ${attempts} attempts: ${(lastErr as Error)?.message ?? lastErr}`,
+  );
 }
 
 function paeth(a: number, b: number, c: number): number {
@@ -121,12 +159,8 @@ async function main() {
 
     const power = await getJson(powerUrl(p.lat, p.lon));
 
-    let soil: unknown = null;
-    try {
-      soil = await getJson(soilGridsUrl(p.lat, p.lon));
-    } catch (err) {
-      console.warn(`\n  ! SoilGrids failed for ${p.id}: ${(err as Error).message}`);
-    }
+    // Hard requirement: a real, complete SoilGrids profile or we stop. No fallback.
+    const soil = await getSoilOrThrow(p.lat, p.lon);
 
     const grace: GraceResult | null = grid ? lookupGrace(grid, p.lat, p.lon) : null;
 
