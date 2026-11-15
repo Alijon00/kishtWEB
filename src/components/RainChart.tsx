@@ -18,9 +18,11 @@ export interface RainPoint {
 
 interface RainChartProps {
   data: RainPoint[];
+  baselineLabel: string;
+  recentLabel: string;
 }
 
-export default function RainChart({ data }: RainChartProps) {
+export default function RainChart({ data, baselineLabel, recentLabel }: RainChartProps) {
   const { d } = useI18n();
   return (
     <div className="card chart-card">
@@ -44,7 +46,7 @@ export default function RainChart({ data }: RainChartProps) {
             <Tooltip
               formatter={(value: number, name) => [
                 `${value.toFixed(0)} mm`,
-                name === "baseline" ? d.charts.periodBaseline : d.charts.periodRecent,
+                name === "baseline" ? baselineLabel : recentLabel,
               ]}
               cursor={{ fill: "rgba(79,195,220,0.08)" }}
               contentStyle={{
@@ -60,9 +62,7 @@ export default function RainChart({ data }: RainChartProps) {
             />
             <Legend
               wrapperStyle={{ fontSize: 13, fontFamily: "IBM Plex Sans, sans-serif", color: "#93a39b" }}
-              formatter={(value) =>
-                value === "baseline" ? d.charts.periodBaseline : d.charts.periodRecent
-              }
+              formatter={(value) => (value === "baseline" ? baselineLabel : recentLabel)}
             />
             <Bar dataKey="baseline" fill="#93a39b" radius={[3, 3, 0, 0]} isAnimationActive={false} />
             <Bar dataKey="recent" fill="#4fc3dc" radius={[3, 3, 0, 0]} isAnimationActive={false} />

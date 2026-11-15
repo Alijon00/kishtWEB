@@ -28,6 +28,36 @@ export function matchExample(lat: number, lon: number): string | null {
   return null;
 }
 
+export const DEMO_SOIL_RADIUS_KM = 5;
+
+function haversineKm(aLat: number, aLon: number, bLat: number, bLon: number): number {
+  const R = 6371;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+export function nearestDemoWithin(
+  lat: number,
+  lon: number,
+  maxKm = DEMO_SOIL_RADIUS_KM,
+): string | null {
+  let best: string | null = null;
+  let bestKm = Infinity;
+  for (const p of DEMO_POINTS) {
+    const km = haversineKm(lat, lon, p.lat, p.lon);
+    if (km <= maxKm && km < bestKm) {
+      best = p.id;
+      bestKm = km;
+    }
+  }
+  return best;
+}
+
 interface DemoBundle {
   id: string;
   lat: number;

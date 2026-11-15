@@ -389,7 +389,12 @@ export default function Plan({ onPickField }: PlanProps) {
                 <span className="block-h">{d.plan.whyThisPlan}</span>
                 <span className="slider-desc">{d.plan.whyThisPlanHint}</span>
               </summary>
-              <WhyPanel result={result} />
+              <WhyPanel
+                result={result}
+                soilFallback={
+                  bundle.soilStatus === "unavailable" || bundle.soilStatus === "error"
+                }
+              />
             </details>
           )}
         </>

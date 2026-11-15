@@ -1,11 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchSoilNearest } from "../lib/soilgrids";
 import { assessSoil, type SoilAssessment } from "../lib/soil";
-import {
-  DEMO_FALLBACK_TIMEOUT_MS,
-  loadDemoSoil,
-  matchExample,
-} from "../lib/demoCache";
+import { loadDemoSoil, nearestDemoWithin } from "../lib/demoCache";
 
 export type SoilStatus = "idle" | "loading" | "ready" | "unavailable" | "error";
 
@@ -44,7 +40,7 @@ export function useSoil(lat: number | null, lon: number | null): UseSoilResult {
     setCached(false);
     setNearestKm(0);
 
-    const example = matchExample(lat, lon);
+    const example = nearestDemoWithin(lat, lon);
     let settled = false;
     const settle = (
       next: SoilStatus,
@@ -59,25 +55,36 @@ export function useSoil(lat: number | null, lon: number | null): UseSoilResult {
       setNearestKm(km);
       setStatus(next);
     };
-    const tryDemo = (onMiss: () => void) => {
-      if (!example) return onMiss();
-      loadDemoSoil(example).then((res) => {
-        if (!res) return onMiss();
-        settle(res.profile ? "ready" : "unavailable", res.profile ? assessSoil(res.profile) : null, true, 0);
-      });
+
+    const fetchLive = () => {
+      fetchSoilNearest(lat, lon, { signal: controller.signal })
+        .then(({ profile, distanceKm }) =>
+          settle(profile ? "ready" : "unavailable", profile ? assessSoil(profile) : null, false, distanceKm),
+        )
+        .catch(() => {
+          if (controller.signal.aborted) return;
+          settle("error", null, false, 0);
+        });
     };
 
-    fetchSoilNearest(lat, lon, { signal: controller.signal })
-      .then(({ profile, distanceKm }) =>
-        settle(profile ? "ready" : "unavailable", profile ? assessSoil(profile) : null, false, distanceKm),
-      )
-      .catch(() => {
-        if (controller.signal.aborted) return;
-        tryDemo(() => settle("error", null, false, 0));
-      });
-
     if (example) {
-      window.setTimeout(() => tryDemo(() => {}), DEMO_FALLBACK_TIMEOUT_MS);
+      loadDemoSoil(example)
+        .then((res) => {
+          if (id !== reqId.current || settled) return;
+          if (res) {
+            settle(
+              res.profile ? "ready" : "unavailable",
+              res.profile ? assessSoil(res.profile) : null,
+              true,
+              0,
+            );
+          } else {
+            fetchLive();
+          }
+        })
+        .catch(() => fetchLive());
+    } else {
+      fetchLive();
     }
   }, [lat, lon]);
 

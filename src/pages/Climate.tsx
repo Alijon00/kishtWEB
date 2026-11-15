@@ -8,10 +8,11 @@ import { useTerrain } from "../state/useTerrain";
 import type { MonthlyRecord } from "../lib/types";
 import type { GraceCategory } from "../lib/grace";
 import {
-  BASELINE,
+  climatePeriods,
   dropPartialYears,
+  expectedPeriods,
+  fmtRange,
   monthlyPrecipProfile,
-  RECENT,
   soilMoistureSummary,
   summarize,
   summerTrend,
@@ -43,12 +44,18 @@ export default function Climate({ onPickField, onContinue }: ClimateProps) {
   const records = climate.records;
   const anyCached = climate.cached || soil.cached || grace.cached || terrain.cached;
 
+  const periods = records ? climatePeriods(dropPartialYears(records)) : expectedPeriods();
+  const subtitle = d.climate.subtitle({
+    baseline: fmtRange(periods.baseline),
+    recent: fmtRange(periods.recent),
+  });
+
   if (!field) {
     return (
       <section>
         <div className="screen-head">
           <h1>{d.climate.title}</h1>
-          <div className="subtitle">{d.climate.subtitle}</div>
+          <div className="subtitle">{subtitle}</div>
         </div>
         <div className="card state">
           <h2>{d.climate.pickTitle}</h2>
@@ -66,7 +73,7 @@ export default function Climate({ onPickField, onContinue }: ClimateProps) {
       <div className="screen-head">
         <h1>{d.climate.title}</h1>
         <div className="subtitle">
-          {d.climate.subtitle} · {fieldLabel(field)}
+          {subtitle} · {fieldLabel(field)}
           {anyCached && <CachedBadge />}
         </div>
       </div>
@@ -119,30 +126,35 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
   const moisture = useMemo(() => soilMoistureSummary(recs), [recs]);
   const insight = useMemo(() => buildInsight(summary, soil.assessment), [summary, soil.assessment]);
 
+  const baselineLabel = fmtRange(summary.baselineYears);
+  const recentLabel = fmtRange(summary.recentYears);
+  const trendLabel = fmtRange(summary.trendYears);
+
   const tempData: TempPoint[] = useMemo(() => {
-    const fit = summerTrend(recs);
-    return yearlySummerTemps(recs).map((p) => ({
+    const fit = summerTrend(recs, summary.trendYears);
+    return yearlySummerTemps(recs, summary.trendYears).map((p) => ({
       year: p.year,
       temp: Number(p.temp.toFixed(2)),
       trend: Number((fit.slopePerYear * p.year + fit.intercept).toFixed(2)),
     }));
-  }, [recs]);
+  }, [recs, summary.trendYears]);
 
   const rainData: RainPoint[] = useMemo(() => {
-    const base = monthlyPrecipProfile(recs, BASELINE);
-    const recent = monthlyPrecipProfile(recs, RECENT);
+    const base = monthlyPrecipProfile(recs, summary.baselineYears);
+    const recent = monthlyPrecipProfile(recs, summary.recentYears);
     return base.map((b, i) => ({
       month: d.charts.months[i],
       baseline: Number(b.precipMm.toFixed(1)),
       recent: Number(recent[i].precipMm.toFixed(1)),
     }));
-  }, [recs, d]);
+  }, [recs, d, summary.baselineYears, summary.recentYears]);
 
   const climateTone =
     summary.summerTempChangeC >= 0.5 || summary.annualPrecipChangePct <= -5 ? "warn" : "neutral";
   const climateLead = d.conditions.climateLead({
     tempDelta: `${signed(summary.summerTempChangeC, 1)} °C`,
     rainPct: `${signed(summary.annualPrecipChangePct, 0)}%`,
+    baseline: baselineLabel,
   });
 
   const graceWord = grace.status === "ready" && grace.result ? GRACE_LABEL(d, grace.result.category) : null;
@@ -201,7 +213,7 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
         <span className="inshort-tag">{d.conditions.inShort}</span>
         <div className="inshort-body">
           {insight.map((item, i) => (
-            <p key={i}>{renderInsight(d, item)}</p>
+            <p key={i}>{renderInsight(d, item, baselineLabel)}</p>
           ))}
         </div>
       </div>
@@ -248,8 +260,8 @@ function Report({ records, soil, grace, terrain }: ReportProps) {
           <span className="block-h">{d.climate.seeMeasurements}</span>
         </summary>
         <div className="measurements-body">
-          <TempChart data={tempData} />
-          <RainChart data={rainData} />
+          <TempChart data={tempData} rangeLabel={trendLabel} />
+          <RainChart data={rainData} baselineLabel={baselineLabel} recentLabel={recentLabel} />
         </div>
       </details>
     </>

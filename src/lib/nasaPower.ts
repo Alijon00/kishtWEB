@@ -10,8 +10,9 @@ export const SITES: Site[] = [
   { id: "nakuru", name: "Kenya, Nakuru", lat: -0.3, lon: 36.07 },
 ];
 
-const START_YEAR = 1995;
-const END_YEAR = 2024;
+const CURRENT_YEAR = new Date().getFullYear();
+const END_YEAR = CURRENT_YEAR - 1;
+const START_YEAR = CURRENT_YEAR - 31;
 
 export function powerUrl(lat: number, lon: number): string {
   const params = new URLSearchParams({
@@ -72,7 +73,7 @@ export function parsePowerResponse(json: PowerResponse): MonthlyRecord[] {
   return records;
 }
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 
 function cacheKey(lat: number, lon: number): string {
   return `kisht:power:${CACHE_VERSION}:${lat.toFixed(2)},${lon.toFixed(2)}`;

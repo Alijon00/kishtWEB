@@ -29,12 +29,14 @@ export default function FieldCard({ field, soil }: { field: Field; soil: UseSoil
       {soil.status === "unavailable" && (
         <div className="soil-state">
           <p>{d.soil.unavailable}</p>
+          <p className="soil-typical" role="note">{d.soil.typical}</p>
         </div>
       )}
 
       {soil.status === "error" && (
         <div className="soil-state">
           <p>{d.soil.error}</p>
+          <p className="soil-typical" role="note">{d.soil.typical}</p>
           <button className="btn btn-small" onClick={soil.reload}>
             {d.common.tryAgain}
           </button>

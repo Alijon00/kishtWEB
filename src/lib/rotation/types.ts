@@ -16,11 +16,13 @@ export interface SiteConditions {
   winterRainMm: number;
   rainChangePct: number;
   tempChangeC: number;
+  baselineYears: [number, number];
 
   socPct: number;
   socLevel: SocLevel;
   ph: number;
   texture: string;
+  soilKnown: boolean;
 
   groundwater: Groundwater;
   groundwaterTrendCm?: number;

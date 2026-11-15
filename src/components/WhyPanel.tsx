@@ -8,6 +8,7 @@ import { usePlan } from "../state/plan";
 
 interface WhyPanelProps {
   result: EngineResult;
+  soilFallback?: boolean;
 }
 
 function planCrops(slots: PlanSlot[]): Crop[] {
@@ -22,7 +23,7 @@ function planCrops(slots: PlanSlot[]): Crop[] {
   return out;
 }
 
-export default function WhyPanel({ result }: WhyPanelProps) {
+export default function WhyPanel({ result, soilFallback = false }: WhyPanelProps) {
   const { d } = useI18n();
   const { whyPlanId, setWhyPlanId } = usePlan();
 
@@ -33,6 +34,12 @@ export default function WhyPanel({ result }: WhyPanelProps) {
 
   return (
     <div className="why-panel">
+      {soilFallback && (
+        <p className="panel-msg soil-typical" role="note">
+          {d.soil.typical}
+        </p>
+      )}
+
       {}
       <div className="why-pick">
         <span className="why-pick-label">{d.why.explaining}:</span>

@@ -267,10 +267,11 @@ function buildReasons(
 
   const thirstyCrops = [...new Set(crops.filter((c) => c.waterNeedMm[1] >= 1000))];
   const thirstyNames = thirstyCrops.map((c) => c.name.toLowerCase());
+  const baselineLabel = `${site.baselineYears[0]}–${site.baselineYears[1]}`;
   reasons.push({
     dataPoint: `Annual rain ${site.annualRainMm.toFixed(0)} mm (${signed(
       site.rainChangePct,
-    )}% vs 1995–2004)`,
+    )}% vs ${baselineLabel})`,
     source: "NASA POWER",
     rule: "Match crop water demand to the rain the field actually gets",
     effect:
@@ -281,6 +282,7 @@ function buildReasons(
     params: {
       rainMm: Math.round(site.annualRainMm),
       rainChangePct: Math.round(site.rainChangePct),
+      baseline: baselineLabel,
       thirstyIds: thirstyCrops.map((c) => c.id),
     },
   });
@@ -302,7 +304,7 @@ function buildReasons(
   });
 
   const legumeSlot = slots.find((s) => s.crop?.fixesNitrogen);
-  if (site.socLevel === "low" && legumeSlot && legumeSlot.crop) {
+  if (site.soilKnown && site.socLevel === "low" && legumeSlot && legumeSlot.crop) {
     reasons.push({
       dataPoint: `Organic carbon ${site.socPct.toFixed(1)}% (low)`,
       source: "SoilGrids",
@@ -315,7 +317,7 @@ function buildReasons(
         year: legumeSlot.year,
       },
     });
-  } else {
+  } else if (site.soilKnown) {
     const families = new Set(crops.map((c) => c.family)).size;
     reasons.push({
       dataPoint: `Organic carbon ${site.socPct.toFixed(1)}% (${site.socLevel}), pH ${site.ph.toFixed(1)}`,

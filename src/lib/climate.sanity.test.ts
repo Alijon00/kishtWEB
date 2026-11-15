@@ -3,7 +3,7 @@ import punjab from "../../public/data/demo/punjab.json";
 import vakhsh from "../../public/data/demo/vakhsh.json";
 import nakuru from "../../public/data/demo/nakuru.json";
 import { parsePowerResponse } from "./nasaPower";
-import { BASELINE, RECENT, completeYears, dropPartialYears, summarize, annualPrecipMean } from "./climate";
+import { RECENT, climatePeriods, completeYears, dropPartialYears, summarize, annualPrecipMean } from "./climate";
 import { SLOPE_FLAT_PCT } from "./terrain";
 import type { MonthlyRecord } from "./types";
 
@@ -39,18 +39,19 @@ describe("climate sanity — demo fields vs raw NASA POWER", () => {
   for (const id of POINTS) {
     it(`${id}: summarize() matches an independent raw recomputation`, () => {
       const recs = dropPartialYears(loadRecords(id));
+      const p = climatePeriods(recs);
 
       const keep = completeYears(recs);
-      const baseN = [...keep].filter((y) => y >= BASELINE[0] && y <= BASELINE[1]).length;
-      const recentN = [...keep].filter((y) => y >= RECENT[0] && y <= RECENT[1]).length;
+      const baseN = [...keep].filter((y) => y >= p.baseline[0] && y <= p.baseline[1]).length;
+      const recentN = [...keep].filter((y) => y >= p.recent[0] && y <= p.recent[1]).length;
       expect(baseN).toBe(10);
       expect(recentN).toBe(10);
       const monthsOf = (y: number) => recs.filter((r) => r.year === y).length;
       for (const y of keep) expect(monthsOf(y)).toBe(12);
 
-      const refTemp = refSummerMean(recs, RECENT) - refSummerMean(recs, BASELINE);
-      const refRainBase = refAnnualRain(recs, BASELINE);
-      const refRain = ((refAnnualRain(recs, RECENT) - refRainBase) / refRainBase) * 100;
+      const refTemp = refSummerMean(recs, p.recent) - refSummerMean(recs, p.baseline);
+      const refRainBase = refAnnualRain(recs, p.baseline);
+      const refRain = ((refAnnualRain(recs, p.recent) - refRainBase) / refRainBase) * 100;
 
       const s = summarize(recs);
 

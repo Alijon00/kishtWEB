@@ -30,6 +30,37 @@ export function dropPartialYears(records: MonthlyRecord[]): MonthlyRecord[] {
   return records.filter((r) => keep.has(r.year));
 }
 
+export function latestCompleteYear(records: MonthlyRecord[]): number {
+  const keep = completeYears(records);
+  return keep.size ? Math.max(...keep) : NaN;
+}
+
+export interface ClimatePeriods {
+  endYear: number;
+  baseline: [number, number];
+  recent: [number, number];
+  trend: [number, number];
+}
+
+export function climatePeriods(records: MonthlyRecord[]): ClimatePeriods {
+  return periodsForEndYear(latestCompleteYear(records));
+}
+
+export const fmtRange = ([a, b]: [number, number]): string => `${a}–${b}`;
+
+export function periodsForEndYear(endYear: number): ClimatePeriods {
+  return {
+    endYear,
+    baseline: [endYear - 29, endYear - 20],
+    recent: [endYear - 9, endYear],
+    trend: [endYear - 29, endYear],
+  };
+}
+
+export function expectedPeriods(): ClimatePeriods {
+  return periodsForEndYear(new Date().getFullYear() - 1);
+}
+
 export function summerMeanTemp(
   records: MonthlyRecord[],
   period: [number, number],
@@ -39,8 +70,11 @@ export function summerMeanTemp(
   );
 }
 
-export function summerTempChange(records: MonthlyRecord[]): number {
-  return summerMeanTemp(records, RECENT) - summerMeanTemp(records, BASELINE);
+export function summerTempChange(
+  records: MonthlyRecord[],
+  periods: ClimatePeriods = climatePeriods(records),
+): number {
+  return summerMeanTemp(records, periods.recent) - summerMeanTemp(records, periods.baseline);
 }
 
 export function summerMeanTmax(
@@ -66,9 +100,12 @@ export function annualPrecipMean(
   return mean([...byYear.values()]);
 }
 
-export function annualPrecipChangePct(records: MonthlyRecord[]): number {
-  const base = annualPrecipMean(records, BASELINE);
-  const recent = annualPrecipMean(records, RECENT);
+export function annualPrecipChangePct(
+  records: MonthlyRecord[],
+  periods: ClimatePeriods = climatePeriods(records),
+): number {
+  const base = annualPrecipMean(records, periods.baseline);
+  const recent = annualPrecipMean(records, periods.recent);
   if (!(base > 0)) return NaN;
   return ((recent - base) / base) * 100;
 }
@@ -82,8 +119,11 @@ export function hotMonthCount(
   ).length;
 }
 
-export function hotMonthChange(records: MonthlyRecord[]): number {
-  return hotMonthCount(records, RECENT) - hotMonthCount(records, BASELINE);
+export function hotMonthChange(
+  records: MonthlyRecord[],
+  periods: ClimatePeriods = climatePeriods(records),
+): number {
+  return hotMonthCount(records, periods.recent) - hotMonthCount(records, periods.baseline);
 }
 
 export interface YearlySummerTemp {
@@ -91,10 +131,14 @@ export interface YearlySummerTemp {
   temp: number;
 }
 
-export function yearlySummerTemps(records: MonthlyRecord[]): YearlySummerTemp[] {
+export function yearlySummerTemps(
+  records: MonthlyRecord[],
+  period?: [number, number],
+): YearlySummerTemp[] {
   const byYear = new Map<number, number[]>();
   for (const r of records) {
     if (!isSummer(r)) continue;
+    if (period && !inPeriod(r.year, period)) continue;
     const arr = byYear.get(r.year) ?? [];
     arr.push(r.t2m);
     byYear.set(r.year, arr);
@@ -111,8 +155,11 @@ export interface LinearFit {
   intercept: number;
 }
 
-export function summerTrend(records: MonthlyRecord[]): LinearFit {
-  const points = yearlySummerTemps(records);
+export function summerTrend(
+  records: MonthlyRecord[],
+  period?: [number, number],
+): LinearFit {
+  const points = yearlySummerTemps(records, period);
   const n = points.length;
   if (n < 2) return { slopePerYear: NaN, slopePerDecade: NaN, intercept: NaN };
 
@@ -204,7 +251,7 @@ export function deriveSeasonalClimate(
   records: MonthlyRecord[],
   lat: number,
 ): SeasonalClimate {
-  const { rain, temp } = monthlyAggregates(records, RECENT);
+  const { rain, temp } = monthlyAggregates(records, climatePeriods(records).recent);
 
   if (Math.abs(lat) > TROPICS_LAT_DEG) {
     const north = lat > 0;
@@ -258,9 +305,12 @@ export interface SoilMoistureSummary {
   trend: SoilMoistureTrend;
 }
 
-export function soilMoistureSummary(records: MonthlyRecord[]): SoilMoistureSummary {
-  const baseline = soilMoistureMean(records, BASELINE);
-  const recent = soilMoistureMean(records, RECENT);
+export function soilMoistureSummary(
+  records: MonthlyRecord[],
+  periods: ClimatePeriods = climatePeriods(records),
+): SoilMoistureSummary {
+  const baseline = soilMoistureMean(records, periods.baseline);
+  const recent = soilMoistureMean(records, periods.recent);
   const hasData = Number.isFinite(baseline) && Number.isFinite(recent);
   const delta = hasData ? recent - baseline : NaN;
   const trend: SoilMoistureTrend = !hasData
@@ -280,15 +330,26 @@ export interface ClimateSummary {
   hotMonthsBaseline: number;
   hotMonthsRecent: number;
   trendPerDecadeC: number;
+  endYear: number;
+  baselineYears: [number, number];
+  recentYears: [number, number];
+  trendYears: [number, number];
 }
 
-export function summarize(records: MonthlyRecord[]): ClimateSummary {
+export function summarize(
+  records: MonthlyRecord[],
+  periods: ClimatePeriods = climatePeriods(records),
+): ClimateSummary {
   return {
-    summerTempChangeC: summerTempChange(records),
-    annualPrecipChangePct: annualPrecipChangePct(records),
-    hotMonthChange: hotMonthChange(records),
-    hotMonthsBaseline: hotMonthCount(records, BASELINE),
-    hotMonthsRecent: hotMonthCount(records, RECENT),
-    trendPerDecadeC: summerTrend(records).slopePerDecade,
+    summerTempChangeC: summerTempChange(records, periods),
+    annualPrecipChangePct: annualPrecipChangePct(records, periods),
+    hotMonthChange: hotMonthChange(records, periods),
+    hotMonthsBaseline: hotMonthCount(records, periods.baseline),
+    hotMonthsRecent: hotMonthCount(records, periods.recent),
+    trendPerDecadeC: summerTrend(records, periods.trend).slopePerDecade,
+    endYear: periods.endYear,
+    baselineYears: periods.baseline,
+    recentYears: periods.recent,
+    trendYears: periods.trend,
   };
 }

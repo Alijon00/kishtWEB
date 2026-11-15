@@ -8,6 +8,7 @@ import {
   hotMonthChange,
   hotMonthCount,
   monthlyPrecipProfile,
+  periodsForEndYear,
   RECENT,
   soilMoistureMean,
   soilMoistureSummary,
@@ -17,6 +18,9 @@ import {
   summerTrend,
   yearlySummerTemps,
 } from "./climate";
+
+// The 1995–2004 / 2015–2024 windows the legacy fixtures assume (end year 2024).
+const P2024 = periodsForEndYear(2024);
 
 function rec(partial: Partial<MonthlyRecord> & Pick<MonthlyRecord, "year" | "month">): MonthlyRecord {
   return { t2m: 20, t2mMax: 25, precipMm: 10, ...partial };
@@ -40,7 +44,7 @@ describe("soilMoisture (GWETROOT)", () => {
   });
 
   it("classifies a clear drop as falling", () => {
-    const s = soilMoistureSummary(dryingRecs);
+    const s = soilMoistureSummary(dryingRecs, P2024);
     expect(s.hasData).toBe(true);
     expect(s.baseline).toBeCloseTo(0.4, 10);
     expect(s.recent).toBeCloseTo(0.3, 10);
@@ -49,16 +53,22 @@ describe("soilMoisture (GWETROOT)", () => {
   });
 
   it("classifies a tiny change as stable and a clear rise as rising", () => {
-    const stable = soilMoistureSummary([
-      rec({ year: 1996, month: 6, gwetroot: 0.4 }),
-      rec({ year: 2016, month: 6, gwetroot: 0.405 }),
-    ]);
+    const stable = soilMoistureSummary(
+      [
+        rec({ year: 1996, month: 6, gwetroot: 0.4 }),
+        rec({ year: 2016, month: 6, gwetroot: 0.405 }),
+      ],
+      P2024,
+    );
     expect(stable.trend).toBe("stable");
 
-    const rising = soilMoistureSummary([
-      rec({ year: 1996, month: 6, gwetroot: 0.3 }),
-      rec({ year: 2016, month: 6, gwetroot: 0.4 }),
-    ]);
+    const rising = soilMoistureSummary(
+      [
+        rec({ year: 1996, month: 6, gwetroot: 0.3 }),
+        rec({ year: 2016, month: 6, gwetroot: 0.4 }),
+      ],
+      P2024,
+    );
     expect(rising.trend).toBe("rising");
   });
 
@@ -95,7 +105,7 @@ describe("summerTempChange", () => {
       rec({ year: 2015, month: 7, t2m: 22 }),
       rec({ year: 2024, month: 7, t2m: 23 }),
     ];
-    expect(summerTempChange(recs)).toBeCloseTo(2.5, 10);
+    expect(summerTempChange(recs, P2024)).toBeCloseTo(2.5, 10);
   });
 });
 
@@ -113,12 +123,12 @@ describe("annualPrecipMean & annualPrecipChangePct", () => {
   });
 
   it("expresses the baseline→recent change as a percent of baseline", () => {
-    expect(annualPrecipChangePct(recs)).toBeCloseTo(100, 10);
+    expect(annualPrecipChangePct(recs, P2024)).toBeCloseTo(100, 10);
   });
 
   it("returns NaN when the baseline total is zero", () => {
     const dry = [rec({ year: 2015, month: 1, precipMm: 50 })];
-    expect(Number.isNaN(annualPrecipChangePct(dry))).toBe(true);
+    expect(Number.isNaN(annualPrecipChangePct(dry, P2024))).toBe(true);
   });
 });
 
@@ -137,7 +147,7 @@ describe("hotMonthCount & hotMonthChange", () => {
   });
 
   it("reports the change between periods", () => {
-    expect(hotMonthChange(recs)).toBe(1);
+    expect(hotMonthChange(recs, P2024)).toBe(1);
   });
 });
 
@@ -229,7 +239,7 @@ describe("summarize", () => {
       rec({ year: 1995, month: 7, t2m: 20, t2mMax: 36, precipMm: 100 }),
       rec({ year: 2015, month: 7, t2m: 22, t2mMax: 40, precipMm: 200 }),
     ];
-    const s = summarize(recs);
+    const s = summarize(recs, P2024);
     expect(s.summerTempChangeC).toBeCloseTo(2, 10);
     expect(s.annualPrecipChangePct).toBeCloseTo(100, 10);
     expect(s.hotMonthsBaseline).toBe(1);

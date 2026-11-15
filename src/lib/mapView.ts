@@ -25,7 +25,7 @@ export function fitGlobeZoom(minDim: number): number {
 export const SPIN_DEG_PER_SEC = 5;
 
 export interface ContinentPreset {
-  id: "asia" | "africa" | "europe" | "americas" | "oceania";
+  id: "asia" | "africa" | "europe" | "northAmerica" | "southAmerica" | "australia";
   center: [number, number];
   zoom: number;
 }
@@ -34,8 +34,9 @@ export const CONTINENTS: ContinentPreset[] = [
   { id: "asia", center: [90, 45], zoom: 2.2 },
   { id: "africa", center: [20, 3], zoom: 2.3 },
   { id: "europe", center: [15, 54], zoom: 3 },
-  { id: "americas", center: [-95, 20], zoom: 2 },
-  { id: "oceania", center: [140, -25], zoom: 2.8 },
+  { id: "northAmerica", center: [-100, 45], zoom: 2.3 },
+  { id: "southAmerica", center: [-60, -15], zoom: 2.5 },
+  { id: "australia", center: [134, -25], zoom: 3 },
 ];
 
 const fadeIn = ["interpolate", ["linear"], ["zoom"], FADE_LOW, 0, FADE_HIGH, 1] as const;

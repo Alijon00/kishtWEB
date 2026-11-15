@@ -11,6 +11,7 @@ import { useGroundwater } from "../state/useGroundwater";
 import { useTerrain } from "../state/useTerrain";
 import { SLOPE_FLAT_PCT } from "../lib/terrain";
 import { EROSION_SLOPE_PCT } from "../lib/rotation/constants";
+import { climatePeriods, dropPartialYears, expectedPeriods } from "../lib/climate";
 import { searchPlace, type PlaceResult } from "../lib/geocode";
 import { useI18n } from "../i18n";
 import type { Dict } from "../i18n/en";
@@ -84,8 +85,11 @@ export default function Field({ onContinue }: FieldProps) {
     s <= SLOPE_FLAT_PCT ? d.terrain.flat : s <= EROSION_SLOPE_PCT ? d.terrain.gentle : d.terrain.steep;
   const climateState: DataState =
     climate.status === "error" ? "unavailable" : (climate.status as DataState);
+  const climateStartYear = (
+    climate.records ? climatePeriods(dropPartialYears(climate.records)) : expectedPeriods()
+  ).baseline[0];
   const dataRows: DataRow[] = [
-    { name: "NASA POWER", label: d.field.dsClimate, state: climateState, cached: climate.cached },
+    { name: "NASA POWER", label: d.field.dsClimate({ year: climateStartYear }), state: climateState, cached: climate.cached },
     { name: "GRACE-FO", label: d.field.dsWater, state: grace.status as DataState, cached: grace.cached },
     {
       name: "SRTM",

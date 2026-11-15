@@ -115,18 +115,37 @@ function writeCache(lat: number, lon: number, value: CachedSoil): void {
   }
 }
 
-export async function fetchSoil(
+export const SOIL_RETRY_BACKOFF_MS = [1500, 4000];
+
+interface FetchSoilOpts {
+  signal?: AbortSignal;
+  retries?: number;
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new DOMException("Aborted", "AbortError"));
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+async function fetchSoilOnce(
   lat: number,
   lon: number,
-  opts: { signal?: AbortSignal } = {},
+  signal?: AbortSignal,
 ): Promise<SoilProfile | null> {
-  const cached = readCache(lat, lon);
-  if (cached) return cached.profile;
-
   const timeout = new AbortController();
   const timer = setTimeout(() => timeout.abort(), TIMEOUT_MS);
   const onAbort = () => timeout.abort();
-  opts.signal?.addEventListener("abort", onAbort);
+  signal?.addEventListener("abort", onAbort);
 
   try {
     const res = await fetch(soilGridsUrl(lat, lon), { signal: timeout.signal });
@@ -134,18 +153,41 @@ export async function fetchSoil(
       throw new Error(`SoilGrids request failed (HTTP ${res.status}).`);
     }
     const json = (await res.json()) as SoilGridsResponse;
-    const profile = parseSoilGrids(json);
-    writeCache(lat, lon, { profile });
-    return profile;
+    return parseSoilGrids(json);
   } catch (err) {
-    if (timeout.signal.aborted && !opts.signal?.aborted) {
+    if (timeout.signal.aborted && !signal?.aborted) {
       throw new Error("Soil data request timed out.");
     }
     throw err;
   } finally {
     clearTimeout(timer);
-    opts.signal?.removeEventListener("abort", onAbort);
+    signal?.removeEventListener("abort", onAbort);
   }
+}
+
+export async function fetchSoil(
+  lat: number,
+  lon: number,
+  opts: FetchSoilOpts = {},
+): Promise<SoilProfile | null> {
+  const cached = readCache(lat, lon);
+  if (cached) return cached.profile;
+
+  const retries = opts.retries ?? SOIL_RETRY_BACKOFF_MS.length;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    try {
+      const profile = await fetchSoilOnce(lat, lon, opts.signal);
+      if (profile) writeCache(lat, lon, { profile });
+      return profile;
+    } catch (err) {
+      lastErr = err;
+      if (opts.signal?.aborted || attempt >= retries) throw err;
+      await sleep(SOIL_RETRY_BACKOFF_MS[attempt], opts.signal);
+    }
+  }
+  throw lastErr;
 }
 
 export const SOIL_SEARCH_RINGS_KM = [1, 2, 5];
@@ -176,7 +218,9 @@ export async function fetchSoilNearest(
 
   for (const km of SOIL_SEARCH_RINGS_KM) {
     const results = await Promise.all(
-      ringPoints(lat, lon, km).map((p) => fetchSoil(p.lat, p.lon, opts).catch(() => null)),
+      ringPoints(lat, lon, km).map((p) =>
+        fetchSoil(p.lat, p.lon, { signal: opts.signal, retries: 0 }).catch(() => null),
+      ),
     );
     const hit = results.find((r) => r != null) ?? null;
     if (hit) return { profile: hit, distanceKm: km };

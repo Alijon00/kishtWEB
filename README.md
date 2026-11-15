@@ -43,7 +43,8 @@ behind every one. Built for the **NASA Space Apps Challenge 2026**.
    field"** block that *prefetches* the climate / water / terrain datasets so the next step opens
    instantly.
 2. **Here's what your field is dealing with** — an **"In short"** plain-language summary, then four
-   cards comparing **1995–2004** with **2015–2024**: **Climate** (temperature + rainfall, NASA
+   cards comparing the baseline decade (**1996–2005**) with the recent decade (**2016–2025**) —
+   the window advances automatically each year — across: **Climate** (temperature + rainfall, NASA
    POWER), **Water** (GRACE-FO groundwater trend + GWETROOT root-zone soil moisture), **Soil**
    (SoilGrids texture, organic carbon, pH) and **The land** (SRTM elevation & slope). The yearly
    charts are one click away under **"See the measurements"**.
@@ -73,7 +74,7 @@ All data is fetched directly from the browser from free, open, CORS-enabled serv
 
 | Source | What we use it for | Link |
 | ------ | ------------------ | ---- |
-| **NASA POWER** | Monthly temperature & rainfall, 1995–2024 (~50 km), **and GWETROOT root-zone soil moisture** (MERRA-2) — climate history, trends and whether the soil is drying | https://power.larc.nasa.gov/ |
+| **NASA POWER** | Monthly temperature & rainfall over the last ~30 complete years (~50 km), **and GWETROOT root-zone soil moisture** (MERRA-2) — climate history, trends and whether the soil is drying | https://power.larc.nasa.gov/ |
 | **NASA/JPL GRACE-FO** (PO.DAAC mascons) | Total-water-storage trend 2003–2024 (~300 km) — whether stored water is falling | https://grace.jpl.nasa.gov/ |
 | **NASA GIBS — Blue Marble** | Global imagery on the 3D globe at low zoom | https://nasa-gibs.github.io/gibs-api-docs/ |
 | **SRTM — AWS Terrain Tiles** (Mapzen "terrarium") | Elevation & slope — drives the erosion-risk rule on steep land | https://registry.opendata.aws/terrain-tiles/ |
@@ -85,7 +86,7 @@ All data is fetched directly from the browser from free, open, CORS-enabled serv
 ### NASA data used (what each one gives)
 
 - **NASA POWER (MERRA-2)** — monthly temperature & rainfall and root-zone soil moisture
-  (GWETROOT), 1995–2024.
+  (GWETROOT) over the last ~30 complete years.
 - **GRACE-FO (NASA/JPL)** — total water-storage trend, 2003–2024.
 - **NASA GIBS (Blue Marble)** — the imagery wrapped on the 3D globe at low zoom.
 - **SRTM via AWS Terrain Tiles** — elevation & slope, for the erosion-risk rule.
@@ -164,6 +165,8 @@ venue Wi-Fi drops, the app falls back to these and shows a small **"cached NASA 
 the full 3-step flow still works with no network (only the map tiles need the internet). Build
 them with `npx tsx scripts/demo/build-demo-cache.ts` (see `scripts/demo/README.md`).
 
+Verify the cached demo data against NASA yourself: `python3 scripts/verify_power.py`.
+
 ## Limitations (what Kisht does *not* know)
 
 - **Not money.** Income is a rough relative 1–5 value, not prices or input costs.
@@ -175,6 +178,13 @@ them with `npx tsx scripts/demo/build-demo-cache.ts` (see `scripts/demo/README.m
   (slope fit over a ~300 m window) — one pixel covers your field and often its neighbours.
 - **Approximate crop table.** Water/heat/salinity figures are FAO-based reference values, meant
   to be edited for a specific market and region.
+- **GRACE-FO trend ends at 2024** (*follow-up*). The POWER climate record advances automatically
+  each year, but the GRACE-FO total-water-storage trend is still fixed at **2003–2024** — extending
+  it needs an Earthdata mascon rebuild (`scripts/grace/`). Until then the groundwater trend is one
+  year behind the climate panels.
+- **Soil can be unavailable.** When SoilGrids can't return a value for a point (e.g. open water, or
+  an API timeout), Kisht falls back to **typical values** for the plan and says so — it never
+  presents them as a measurement of your field.
 - **Tajik translation needs a native-speaker review** (`src/i18n/tg.ts` is best-effort).
 
 Treat Kisht as a **starting point for a conversation with a local agronomist**, not a final word.

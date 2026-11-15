@@ -38,7 +38,7 @@ const en = {
     pickToStart: "Pick a field to start",
     statusLoading: "loading…",
     statusUnavailable: "unavailable",
-    dsClimate: "Climate since 1995",
+    dsClimate: (p: { year: number }) => `Climate since ${p.year}`,
     dsWater: "Water underground",
     dsTerrain: "Terrain",
     dsSoil: "Soil (shown above)",
@@ -62,14 +62,16 @@ const en = {
       asia: "Asia",
       africa: "Africa",
       europe: "Europe",
-      americas: "Americas",
-      oceania: "Oceania",
+      northAmerica: "North America",
+      southAmerica: "South America",
+      australia: "Australia",
     },
   },
 
   climate: {
     title: "Here's what your field is dealing with",
-    subtitle: "Comparing 1995–2004 with 2015–2024, from NASA & open Earth data",
+    subtitle: (p: { baseline: string; recent: string }) =>
+      `Comparing ${p.baseline} with ${p.recent}, from NASA & open Earth data`,
     pickTitle: "Pick a field first",
     pickHint: "Choose a point on the map so we can pull its NASA climate record.",
     loadingSub: "Fetching 30 years of monthly climate data for this field.",
@@ -77,8 +79,8 @@ const en = {
     statRainfall: "Yearly rainfall",
     statHotMonths: "Very hot months (>35 °C)",
     statWarmingTrend: "Summer warming trend",
-    subChangeVsBaseline: "change vs. 1995–2004",
-    subPerDecade: "per decade (1995–2024)",
+    subChangeVsBaseline: (p: { baseline: string }) => `change vs. ${p.baseline}`,
+    subPerDecade: (p: { trend: string }) => `per decade (${p.trend})`,
     hotMonthsSub: (p: { a: number; b: number }) => `${p.a} → ${p.b} per decade`,
     continue: "Plan the next four years →",
     seeMeasurements: "See the measurements",
@@ -90,8 +92,8 @@ const en = {
     water: "Water",
     soil: "Soil",
     land: "The land",
-    climateLead: (p: { tempDelta: string; rainPct: string }) =>
-      `Summers run ${p.tempDelta} and yearly rain is ${p.rainPct} versus the late 1990s.`,
+    climateLead: (p: { tempDelta: string; rainPct: string; baseline: string }) =>
+      `Summers run ${p.tempDelta} and yearly rain is ${p.rainPct} versus ${p.baseline}.`,
     waterLead: (p: { grace: string; moisture: string }) =>
       `Water stored underground is ${p.grace}, and the root-zone soil is ${p.moisture}.`,
     waterLeadNoGrace: (p: { moisture: string }) =>
@@ -139,6 +141,7 @@ const en = {
     reading: "Reading SoilGrids…",
     unavailable: "We couldn't find farmland data here. Try a point on land.",
     error: "Soil data unavailable right now.",
+    typical: "Soil data unavailable — using typical values for the plan, not a measurement of this field.",
     texture: "Texture",
     organicCarbon: "Organic carbon",
     ph: "pH (water)",
@@ -164,33 +167,33 @@ const en = {
   soilMoisture: {
     title: "Root-zone soil moisture",
     value: "Root-zone wetness",
-    sub: "mean 1995–2004 → 2015–2024",
+    sub: (p: { baseline: string; recent: string }) => `mean ${p.baseline} → ${p.recent}`,
     source: "Root-zone soil wetness · NASA POWER (MERRA-2)",
     loading: "Reading soil moisture…",
     unavailable: "No soil-moisture data for this point yet. Re-run the demo cache, or pick a live point.",
-    blurbFalling:
-      "Root-zone soil is drier than in 1995–2004 — the plan leans toward drought-tolerant crops.",
-    blurbStable: "Root-zone soil moisture is roughly unchanged since 1995–2004.",
-    blurbRising: "Root-zone soil is wetter than in 1995–2004.",
+    blurbFalling: (p: { baseline: string }) =>
+      `Root-zone soil is drier than in ${p.baseline} — the plan leans toward drought-tolerant crops.`,
+    blurbStable: (p: { baseline: string }) =>
+      `Root-zone soil moisture is roughly unchanged since ${p.baseline}.`,
+    blurbRising: (p: { baseline: string }) => `Root-zone soil is wetter than in ${p.baseline}.`,
   },
 
   charts: {
     tempTitle: "Summer temperature by year",
-    tempSub: "Mean June–August temperature, 1995–2024. Dashed line is the linear trend.",
+    tempSub: (p: { trend: string }) =>
+      `Mean June–August temperature, ${p.trend}. Dashed line is the linear trend.`,
     tempTooltipMean: "Summer mean",
     tempTooltipTrend: "Trend",
     tempYear: (p: { year: number | string }) => `Year ${p.year}`,
     rainTitle: "Rainfall by month",
     rainSub: "Average monthly precipitation, two periods side by side (mm).",
-    periodBaseline: "1995–2004",
-    periodRecent: "2015–2024",
     months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
   },
 
   insight: {
     heading: "What this means for your field",
-    heatHotter: (p: { deg: number }) =>
-      `Summers are about ${p.deg} °C hotter than in the late 1990s, so heat-sensitive crops face more stress and may need earlier sowing or shade.`,
+    heatHotter: (p: { deg: number; baseline: string }) =>
+      `Summers are about ${p.deg} °C hotter than in ${p.baseline}, so heat-sensitive crops face more stress and may need earlier sowing or shade.`,
     heatCooler: (p: { deg: number }) =>
       `Summers have actually cooled by about ${p.deg} °C, which can ease heat stress but may shorten the window for heat-loving crops.`,
     heatStable:
@@ -323,7 +326,7 @@ const en = {
     heading: "NASA data used",
     intro: "Every number on this screen traces back to open Earth-observation data:",
     power:
-      "NASA POWER (MERRA-2) — monthly temperature & rainfall and root-zone soil moisture (GWETROOT), 1995–2024.",
+      "NASA POWER (MERRA-2) — monthly temperature & rainfall and root-zone soil moisture (GWETROOT), last ~30 years.",
     grace: "GRACE-FO (NASA/JPL) — total water-storage trend, 2003–2024.",
     srtm: "SRTM via AWS Terrain Tiles — elevation & slope, for the erosion-risk rule.",
     soilgrids: "SoilGrids (ISRIC) — soil texture, organic carbon & pH (not NASA; fills the soil gap).",
@@ -395,8 +398,8 @@ const en = {
   reason: {
     sourceName: (s: string) => (s === "Scenario" ? "Scenario" : s),
     rain: {
-      dataPoint: (p: { rainMm: number; rainChangePct: number }) =>
-        `Annual rain ${p.rainMm} mm (${sgn(p.rainChangePct)}% vs 1995–2004)`,
+      dataPoint: (p: { rainMm: number; rainChangePct: number; baseline: string }) =>
+        `Annual rain ${p.rainMm} mm (${sgn(p.rainChangePct)}% vs ${p.baseline})`,
       rule: "Match crop water demand to the rain the field actually gets",
       effectKeep: "keeps thirsty crops (e.g. rice) out of the rotation",
       effectIrrigate: (p: { crops: string }) => `relies on irrigation for ${p.crops}`,
@@ -456,7 +459,7 @@ const en = {
   sources: {
     power: {
       name: "NASA POWER",
-      desc: "Monthly temperature & rainfall, 1995–2024 (~50 km).",
+      desc: "Monthly temperature & rainfall, last ~30 years (~50 km).",
       url: "https://power.larc.nasa.gov/",
     },
     soilgrids: {

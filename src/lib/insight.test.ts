@@ -9,6 +9,10 @@ const base: ClimateSummary = {
   hotMonthsBaseline: 0,
   hotMonthsRecent: 0,
   trendPerDecadeC: 0,
+  endYear: 2025,
+  baselineYears: [1996, 2005],
+  recentYears: [2016, 2025],
+  trendYears: [1996, 2025],
 };
 
 describe("buildInsight", () => {

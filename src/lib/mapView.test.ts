@@ -42,13 +42,14 @@ describe("buildMapStyle", () => {
 });
 
 describe("CONTINENTS", () => {
-  it("has the five expected continents with valid lon/lat/zoom", () => {
+  it("has the six expected continents with valid lon/lat/zoom", () => {
     expect(CONTINENTS.map((c) => c.id)).toEqual([
       "asia",
       "africa",
       "europe",
-      "americas",
-      "oceania",
+      "northAmerica",
+      "southAmerica",
+      "australia",
     ]);
     for (const c of CONTINENTS) {
       const [lon, latV] = c.center;

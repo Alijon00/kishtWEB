@@ -1074,6 +1074,21 @@ a {
   margin: 8px 0;
 }
 
+.soil-typical {
+  margin: 10px 0 0;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: rgba(242, 184, 75, 0.12);
+  border: 1px solid rgba(242, 184, 75, 0.35);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.soil-state .soil-typical {
+  text-align: left;
+}
+
 .climate-bottom {
   display: grid;
   grid-template-columns: 1.4fr 1fr;

@@ -17,14 +17,15 @@ export interface TempPoint {
 
 interface TempChartProps {
   data: TempPoint[];
+  rangeLabel: string;
 }
 
-export default function TempChart({ data }: TempChartProps) {
+export default function TempChart({ data, rangeLabel }: TempChartProps) {
   const { d } = useI18n();
   return (
     <div className="card chart-card">
       <h2>{d.charts.tempTitle}</h2>
-      <div className="chart-sub">{d.charts.tempSub}</div>
+      <div className="chart-sub">{d.charts.tempSub({ trend: rangeLabel })}</div>
       <div className="chart-box">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ top: 8, right: 12, bottom: 4, left: -8 }}>

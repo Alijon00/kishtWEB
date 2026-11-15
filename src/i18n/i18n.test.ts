@@ -17,6 +17,8 @@ const SITE: SiteConditions = {
   winterRainMm: 150,
   rainChangePct: -10,
   tempChangeC: 1,
+  baselineYears: [1996, 2005],
+  soilKnown: true,
   socPct: 0.5,
   socLevel: "low",
   ph: 8,

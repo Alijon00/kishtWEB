@@ -29,6 +29,8 @@ const MILD: SiteConditions = {
   winterRainMm: 200,
   rainChangePct: -3,
   tempChangeC: 0.5,
+  baselineYears: [1996, 2005],
+  soilKnown: true,
   socPct: 1.5,
   socLevel: "medium",
   ph: 7.0,
@@ -47,6 +49,8 @@ const PUNJAB: SiteConditions = {
   winterRainMm: 90,
   rainChangePct: -5,
   tempChangeC: 1.1,
+  baselineYears: [1996, 2005],
+  soilKnown: true,
   socPct: 0.45,
   socLevel: "low",
   ph: 7.8,
@@ -66,6 +70,8 @@ const COOL_HIGHLAND: SiteConditions = {
   winterRainMm: 280,
   rainChangePct: 2,
   tempChangeC: 0.8,
+  baselineYears: [1996, 2005],
+  soilKnown: true,
   socPct: 2.8,
   socLevel: "good",
   ph: 6.2,
@@ -84,6 +90,8 @@ const VAKHSH: SiteConditions = {
   winterRainMm: 180,
   rainChangePct: -8,
   tempChangeC: 1.3,
+  baselineYears: [1996, 2005],
+  soilKnown: true,
   socPct: 0.6,
   socLevel: "low",
   ph: 8.0,
@@ -490,6 +498,26 @@ describe("falling root-zone soil moisture (GWETROOT) raises drought-tolerant rel
     for (const p of plans) {
       expect(p.reasons.some((x) => x.code === "soilMoisture")).toBe(false);
     }
+  });
+});
+
+describe("soil fallback — typical values are never cited as a SoilGrids measurement", () => {
+  const NO_SOIL: SiteConditions = { ...PUNJAB, soilKnown: false };
+
+  it("emits no SoilGrids-sourced soil reason when soil is unknown", () => {
+    const { plans } = buildPlans(NO_SOIL, PR, NOW);
+    expect(plans.length).toBeGreaterThan(0);
+    for (const p of plans) {
+      expect(p.reasons.some((r) => r.source === "SoilGrids")).toBe(false);
+      expect(p.reasons.some((r) => r.code === "soilDiversity" || r.code === "soilLegume")).toBe(
+        false,
+      );
+    }
+  });
+
+  it("still emits a SoilGrids soil reason when soil is known", () => {
+    const { plans } = buildPlans(PUNJAB, PR, NOW);
+    expect(plans.some((p) => p.reasons.some((r) => r.source === "SoilGrids"))).toBe(true);
   });
 });
 

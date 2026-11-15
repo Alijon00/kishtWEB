@@ -55,11 +55,11 @@ export function cropName(d: Dict, id: string): string {
   return (d.crops as Record<string, string>)[id] ?? id;
 }
 
-export function renderInsight(d: Dict, item: InsightItem): string {
+export function renderInsight(d: Dict, item: InsightItem, baseline = ""): string {
   const p = item.params ?? {};
   switch (item.code) {
     case "heatHotter":
-      return d.insight.heatHotter({ deg: Number(p.deg) });
+      return d.insight.heatHotter({ deg: Number(p.deg), baseline });
     case "heatCooler":
       return d.insight.heatCooler({ deg: Number(p.deg) });
     case "heatStable":
@@ -103,6 +103,7 @@ export function renderReason(d: Dict, r: Reason): RenderedReason {
         dataPoint: d.reason.rain.dataPoint({
           rainMm: Number(p.rainMm),
           rainChangePct: Number(p.rainChangePct),
+          baseline: String(p.baseline ?? ""),
         }),
         source,
         rule: d.reason.rain.rule,
