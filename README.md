@@ -2,6 +2,9 @@
 
 Kisht (Tajik: кишт — "sowing") · team localhost:404
 
+🌍 Live demo: https://kisht-inky.vercel.app
+💻 Code: https://github.com/Alijon00/kishtWEB
+
 **Kisht** helps smallholder farmers decide *what to plant, and in what order,* on a changing
 climate. You pick a field on a map; Kisht pulls that spot's real climate history, soil,
 groundwater trend, **terrain (slope) and root-zone soil moisture** from NASA and open data, then
