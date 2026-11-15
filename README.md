@@ -8,15 +8,6 @@ groundwater trend, **terrain (slope) and root-zone soil moisture** from NASA and
 proposes three explainable 4-year crop rotations — and shows the data-to-decision reasoning
 behind every one. Built for the **NASA Space Apps Challenge 2026**.
 
-> 🌍 **Live demo:** _coming soon_  <!-- TODO: paste the deployed URL -->
->
-> 🎬 **Demo video:** _coming soon_  <!-- TODO: paste the video link -->
->
-> 🖥️ **Screenshot:** _add `docs/screenshot.png` and it will show below_
->
-> ![Kisht screenshot](docs/screenshot.png)
-
----
 
 ## How Kisht answers the challenge
 
@@ -198,9 +189,9 @@ dependency-free, type-checked dictionary. Ships as a static site (Vercel-ready).
 
 ## Team
 
-- [Name] — role
-- [Name] — role
-- [Name] — role
+- Rustamov Alijon — captain, product & frontend
+- Akramov Rizo — data validation (Python checks against the NASA POWER API)
+- Mirzoev Yamin — speaker, pitch & presentation
 
 ## Use of AI
 
