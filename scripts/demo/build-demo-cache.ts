@@ -1,0 +1,184 @@
+/**
+ * Build public/data/demo/{vakhsh,punjab,nakuru}.json — the offline demo cache.
+ *
+ * Run this ONCE, with a working internet connection, from the repo root:
+ *
+ *     npx tsx scripts/demo/build-demo-cache.ts
+ *
+ * For each example field it fetches the real NASA POWER and SoilGrids responses
+ * and looks up the GRACE-FO trend from public/data/grace_trend.json (so run the
+ * GRACE builder first — see scripts/grace/README.md), then writes one JSON per
+ * field. The app loads these when a live API is slow/offline for an example
+ * point and shows a "cached NASA data" badge. These are REAL responses, saved —
+ * nothing here is hand-written or made up.
+ */
+
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { inflateSync } from "node:zlib";
+
+import { powerUrl } from "../../src/lib/nasaPower";
+import { soilGridsUrl } from "../../src/lib/soilgrids";
+import { lookupGrace, type GraceGrid, type GraceResult } from "../../src/lib/grace";
+import {
+  groundResolutionM,
+  lonLatToTilePixel,
+  terrainFromPixels,
+  terrainTileUrl,
+  TERRAIN_ZOOM,
+  type TerrainResult,
+} from "../../src/lib/terrain";
+
+// Must match DEMO_POINTS in src/lib/demoCache.ts and EXAMPLE_SITES in state/field.
+const POINTS = [
+  { id: "vakhsh", lat: 37.7, lon: 68.8 },
+  { id: "punjab", lat: 30.80, lon: 75.65 },
+  { id: "nakuru", lat: -0.3, lon: 36.07 },
+];
+
+const ROOT = fileURLToPath(new URL("../../", import.meta.url));
+const OUT_DIR = `${ROOT}public/data/demo`;
+const GRACE_FILE = `${ROOT}public/data/grace_trend.json`;
+
+async function getJson(url: string): Promise<unknown> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+  return res.json();
+}
+
+// --- Minimal PNG decoder (8-bit RGB/RGBA, non-interlaced) --------------------
+// Terrarium tiles are 256×256 8-bit RGB PNGs. Decode with Node's built-in zlib
+// so this script needs no extra dependency — just `npx tsx`.
+
+function paeth(a: number, b: number, c: number): number {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+}
+
+function decodePng(buf: Buffer): { width: number; channels: number; data: Uint8Array } {
+  const SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  for (let i = 0; i < 8; i++) {
+    if (buf[i] !== SIG[i]) throw new Error("Not a PNG");
+  }
+  let width = 0;
+  let height = 0;
+  let colorType = 2;
+  const idat: Buffer[] = [];
+  let pos = 8;
+  while (pos < buf.length) {
+    const length = buf.readUInt32BE(pos);
+    const type = buf.toString("ascii", pos + 4, pos + 8);
+    const chunk = buf.subarray(pos + 8, pos + 8 + length);
+    if (type === "IHDR") {
+      width = chunk.readUInt32BE(0);
+      height = chunk.readUInt32BE(4);
+      colorType = chunk[9];
+    } else if (type === "IDAT") {
+      idat.push(chunk);
+    } else if (type === "IEND") {
+      break;
+    }
+    pos += 12 + length;
+  }
+  const channels = colorType === 6 ? 4 : 3; // 2 = RGB, 6 = RGBA
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const out = new Uint8Array(height * stride);
+  let prev = new Uint8Array(stride);
+  let rp = 0;
+  for (let y = 0; y < height; y++) {
+    const filter = raw[rp++];
+    const line = new Uint8Array(raw.subarray(rp, rp + stride));
+    rp += stride;
+    for (let x = 0; x < stride; x++) {
+      const a = x >= channels ? line[x - channels] : 0;
+      const b = prev[x];
+      const c = x >= channels ? prev[x - channels] : 0;
+      let v = line[x];
+      if (filter === 1) v = (v + a) & 255;
+      else if (filter === 2) v = (v + b) & 255;
+      else if (filter === 3) v = (v + ((a + b) >> 1)) & 255;
+      else if (filter === 4) v = (v + paeth(a, b, c)) & 255;
+      line[x] = v;
+    }
+    out.set(line, y * stride);
+    prev = line;
+  }
+  return { width, channels, data: out };
+}
+
+/** Fetch + decode the terrarium tile for a point and compute elevation + slope. */
+async function getTerrain(lat: number, lon: number): Promise<TerrainResult> {
+  const { tileX, tileY, px, py } = lonLatToTilePixel(lat, lon, TERRAIN_ZOOM);
+  const res = await fetch(terrainTileUrl(TERRAIN_ZOOM, tileX, tileY));
+  if (!res.ok) throw new Error(`HTTP ${res.status} for terrain tile`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  const { width, channels, data } = decodePng(buf);
+  const cell = groundResolutionM(lat, TERRAIN_ZOOM);
+  return terrainFromPixels(data, width, px, py, cell, channels);
+}
+
+async function loadGraceGrid(): Promise<GraceGrid | null> {
+  try {
+    return JSON.parse(await readFile(GRACE_FILE, "utf8")) as GraceGrid;
+  } catch {
+    console.warn(
+      "  ! public/data/grace_trend.json not found — GRACE will be null in the demo files.\n" +
+        "    Run scripts/grace/build.py first if you want cached groundwater.",
+    );
+    return null;
+  }
+}
+
+async function main() {
+  await mkdir(OUT_DIR, { recursive: true });
+  const grid = await loadGraceGrid();
+
+  for (const p of POINTS) {
+    process.stdout.write(`${p.id} (${p.lat}, ${p.lon}) … `);
+
+    const power = await getJson(powerUrl(p.lat, p.lon));
+
+    let soil: unknown = null;
+    try {
+      soil = await getJson(soilGridsUrl(p.lat, p.lon));
+    } catch (err) {
+      console.warn(`\n  ! SoilGrids failed for ${p.id}: ${(err as Error).message}`);
+    }
+
+    const grace: GraceResult | null = grid ? lookupGrace(grid, p.lat, p.lon) : null;
+
+    let terrain: TerrainResult | null = null;
+    try {
+      terrain = await getTerrain(p.lat, p.lon);
+    } catch (err) {
+      console.warn(`\n  ! Terrain failed for ${p.id}: ${(err as Error).message}`);
+    }
+
+    const bundle = {
+      id: p.id,
+      lat: p.lat,
+      lon: p.lon,
+      fetchedAt: new Date().toISOString(),
+      power,
+      soil,
+      grace,
+      terrain,
+    };
+
+    await writeFile(`${OUT_DIR}/${p.id}.json`, JSON.stringify(bundle), "utf8");
+    const g = grace ? `${grace.trendCmPerYear} cm/yr (${grace.category})` : "none";
+    const t = terrain ? `${terrain.elevationM} m / ${terrain.slopePct}%` : "none";
+    console.log(`ok  [power ✓, soil ${soil ? "✓" : "—"}, grace ${g}, terrain ${t}]`);
+  }
+
+  console.log(`\nWrote ${POINTS.length} files to public/data/demo/`);
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

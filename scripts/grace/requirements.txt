@@ -1,0 +1,7 @@
+# Run the GRACE trend builder:  pip install -r requirements.txt
+# Python 3.9+ recommended. (The repo's system python 3.9 does NOT have these.)
+earthaccess>=0.9      # NASA Earthdata login + PO.DAAC download
+xarray>=2023.1        # reads the NetCDF time/lat/lon cube
+netCDF4>=1.6          # NetCDF backend for xarray
+numpy>=1.23
+pandas>=1.5           # decimal-year time handling

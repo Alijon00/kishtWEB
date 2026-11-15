@@ -1,0 +1,17 @@
+node_modules
+dist
+*.local
+.DS_Store
+.vite
+
+# GRACE raw NetCDF (~1 GB) — only the computed public/data/grace_trend.json is committed
+scripts/grace/data/
+scripts/grace/.venv/
+*.nc
+
+# Secrets — never commit Earthdata / API credentials
+.netrc
+.env
+.env.*
+*.pem
+*.key
